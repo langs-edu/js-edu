@@ -1,0 +1,340 @@
+---
+title: 配列の道具箱——map・filter・find
+course: sekkei
+order: 4
+description: for-ofとくらべながら、配列を変換するmap、絞り込むfilter、探すfindを学びます。自作のforEachItemが、実は配列にもとから備わっていたと分かるレッスンです。
+seed: map・filter・findで、配列の操作をぐっと短く書けるようになりました。次は、値そのものではなく、値の「かたち」を定義する道具——classです。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 自分で作った形は、もとから配列にあった
+
+前回、配列を歩いて、要素ひとつひとつにコールバックを渡す`forEachItem`を自分で作りました。実は、この「配列を歩きながら、渡された関数を呼ぶ」という形そのものが、JavaScriptの配列にもとから備わっています。それも1つだけでなく、目的別に何種類も。このレッスンでは、そのうちの3つ——`map`・`filter`・`find`——を、いつものfor-ofと見くらべながら学びます。魔法ではなく、自分で作れる形の延長だと分かるはずです。
+
+## map——それぞれを、別の値に変換する
+
+配列の各要素を、決まったルールで別の値に変換して、新しい配列を作りたいときがあります。屋台の値段を、すべて2倍にしてみましょう。
+
+まずはfor-ofで。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-a-for"
+  initialCode={`const prices = [300, 500, 200];
+
+const doubledFor = [];
+for (const price of prices) {
+  doubledFor.push(price * 2);
+}
+
+console.log(doubledFor);`}
+/>
+
+空の配列を用意し、for-ofで歩きながら`push`していく——コース3から何度も書いてきた形です。同じことを`map`で書くと、こうなります。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-a-map"
+  initialCode={`const prices = [300, 500, 200];
+
+const doubledMap = prices.map((price) => price * 2);
+
+console.log(doubledMap);
+console.log(prices);`}
+/>
+
+`prices.map((price) => price * 2)`は、「`prices`の各要素に、渡したアロー関数を適用して、その結果を集めた**新しい配列**を返す」という意味です。空の配列を自分で用意する必要も、`push`する必要もありません。最後の`console.log(prices)`が示すとおり、`map`はもとの配列を書き換えません。**変換した結果の、別の新しい配列を返すだけ**です。
+
+<Callout type="note" title="mapは、あの自作のforEachItemに似ている">
+`map`の中身は、考え方としては前回の`forEachItem`とほぼ同じです。ちがうのは、`forEachItem`が「呼ぶだけ」だったのに対して、`map`は「呼んだ結果を集めて、新しい配列として返す」ところです。目的に合わせて、配列を歩く関数を使い分けている——それだけのことです。
+</Callout>
+
+## filter——条件に合うものだけ、残す
+
+次は、条件に合う要素だけを残したいときです。屋台のデータを、オブジェクトの配列として用意します。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-b-for"
+  initialCode={`const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const cheapFor = [];
+for (const item of yatai) {
+  if (item.price <= 300) {
+    cheapFor.push(item);
+  }
+}
+
+console.log(cheapFor);`}
+/>
+
+`300`円以下の屋台だけを、for-ofと`if`で集めています。`filter`を使うと、こうです。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-b-filter"
+  initialCode={`const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const cheapFilter = yatai.filter((item) => item.price <= 300);
+
+console.log(cheapFilter);`}
+/>
+
+`yatai.filter((item) => item.price <= 300)`は、「渡したアロー関数が`true`を返す要素だけを残した、新しい配列を返す」という意味です。`if`の条件式が、そのままアロー関数の中身になっただけだと分かります。
+
+## find——最初の1つだけ、探す
+
+「合うものを全部」ではなく、「最初に見つかった1つだけ」でよいときもあります。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-c-for"
+  initialCode={`const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+let found;
+for (const item of yatai) {
+  if (item.name === "ラムネ") {
+    found = item;
+    break;
+  }
+}
+
+console.log(found);`}
+/>
+
+for-ofで見つけたら`break`で抜ける、という書き方でした。`find`を使うと、こうです。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-c-find"
+  initialCode={`const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const foundQuick = yatai.find((item) => item.name === "ラムネ");
+console.log(foundQuick);
+
+const notFound = yatai.find((item) => item.name === "たこ焼き");
+console.log(notFound);`}
+/>
+
+`find`は、渡したアロー関数が最初に`true`を返した要素**そのもの**を返します（`filter`と違って、配列ではありません）。見つからなければ、コース3の06で見た`undefined`が返ります。ここでもJavaScriptは、見つからなかったことをエラーにはしません。
+
+## 組み合わせる
+
+`filter`も`map`も、結果はどちらも配列なので、続けてつなげられます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-d-chain"
+  initialCode={`const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const cheapNames = yatai.filter((item) => item.price <= 300).map((item) => item.name);
+
+console.log(cheapNames);`}
+/>
+
+「300円以下のものだけ残して、その名前だけ取り出す」という2段階の処理が、1つの文で読めます。`for`と`if`で同じことを書くと、途中結果を入れる変数がもう1つ必要になり、行数も増えます。
+
+<Callout type="mame" title="reduceという、もう1つの道具">
+配列の道具箱には、`reduce`という「配列全体を1つの値にまとめる」ためのメソッドもあります（合計を求める、最大値を探す、などに使えます）。このレッスンでは名前の紹介だけにとどめ、使い方には立ち入りません。気になった人は、MDNで調べてみてください。
+</Callout>
+
+<Exercise title="演習1: mapで、消費税込みの値段を作る">
+
+`[300, 500, 200]`という価格の配列から、10%の消費税を上乗せした金額の配列を、`map`で作ってください。小数点以下は`Math.round`で四捨五入してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-ex1"
+  initialCode={`// ここでmapを使った税込み価格の計算を試してみましょう
+const prices = [300, 500, 200];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+各価格に`1.1`をかければ、10%の消費税込みの金額になります。`map`に渡すアロー関数の中で、`Math.round(price * 1.1)`を計算します。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const withTax = prices.map((price) => Math.round(...));
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const prices = [300, 500, 200];
+const withTax = prices.map((price) => Math.round(price * 1.1));
+console.log(withTax);
+```
+
+`[330, 550, 220]`になります。`Math.round`は、コース2で扱った「数の限界」の話とも関係していて、`300 * 1.1`のような計算はコンピュータの中で誤差を持つことがあるため、四捨五入で整えています。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: filterで、250円より高い屋台を絞り込む">
+
+本文の`yatai`配列から、`price`が`250`より高いものだけを`filter`で取り出してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-ex2"
+  initialCode={`// ここでfilterを試してみましょう
+const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`cheapFilter`と条件が違うだけです。`item.price <= 300`の部分を、`item.price > 250`に変えます。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const expensive = yatai.filter((item) => item.price > ...);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const expensive = yatai.filter((item) => item.price > 250);
+console.log(expensive);
+```
+
+`りんご飴`（300円）と`金魚すくい`（500円）の2つが残ります。`ラムネ`（200円）は条件に合わないので除かれます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: findで、500円の屋台を探す">
+
+本文の`yatai`配列から、`price`がちょうど`500`の要素を`find`で探してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-04-ex3"
+  initialCode={`// ここでfindを試してみましょう
+const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`find`に渡すアロー関数は、`true`か`false`を返す条件式です。「`price`が`500`と等しいか」を`===`で調べます。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const found = yatai.find((item) => item.price === ...);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const yatai = [
+  { name: "りんご飴", price: 300 },
+  { name: "金魚すくい", price: 500 },
+  { name: "ラムネ", price: 200 },
+];
+
+const found = yatai.find((item) => item.price === 500);
+console.log(found);
+```
+
+`{ name: '金魚すくい', price: 500 }`というオブジェクトそのものが返ります。配列ではなく、見つかった要素1つだけであることに注目してください。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `map`は、配列の各要素を変換した**新しい配列**を作る。もとの配列は変わらない
+- `filter`は、条件に合う要素だけを残した**新しい配列**を作る
+- `find`は、条件に合う**最初の要素そのもの**を返す。見つからなければ`undefined`
+- どれも、for-ofと`if`・`push`・`break`で書いていたことの、目的別の短い言い方にすぎない
+- `filter`や`map`はどちらも配列を返すので、`.filter(...).map(...)`のようにつなげて書ける
+- `reduce`という、配列全体を1つの値にまとめる道具もある（名前だけ紹介）
+
+<Quiz
+  client:visible
+  storageKey="sekkei-04"
+  questions={[
+    {
+      q: '`[1, 2, 3].map((n) => n * 10)` の結果として正しいのは？',
+      choices: ['`[1, 2, 3]`（もとの配列のまま）', '`[10, 20, 30]`', '`6`（合計値）'],
+      answer: 1,
+      explain: 'mapは各要素を変換した新しい配列を返します。もとの配列は変更されません。',
+    },
+    {
+      q: '`filter`と`find`のちがいとして正しいのは？',
+      choices: [
+        'filterは条件に合う要素を全部集めた配列を返し、findは最初の1つだけを返す',
+        'filterは最初の1つだけを返し、findは条件に合う要素を全部返す',
+        'どちらも同じ結果を返す',
+      ],
+      answer: 0,
+      explain: 'filterは配列（0個〜複数個）、findは要素そのもの（1個、なければundefined）を返します。',
+    },
+    {
+      q: '`[10, 20, 30].find((n) => n > 100)` の結果は？',
+      choices: ['`30`', '`undefined`', 'エラーになる'],
+      answer: 1,
+      explain: '条件に合う要素が1つもない場合、findはエラーにならずundefinedを返します。',
+    },
+  ]}
+/>

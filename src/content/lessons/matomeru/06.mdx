@@ -1,0 +1,310 @@
+---
+title: nullとundefined——「ない」がふたつある
+course: matomeru
+order: 6
+description: 設定されていないことを表すundefinedと、意図的な空を表すnullという、ふたつの「ない」を整理します。オプショナルチェーン?.と、実物のTypeErrorにも出会います。
+seed: 「ない」を安全に扱えるようになりました。最後に、ここまでの道具を全部使う練習です。文章を単語に分けて、それぞれが何回登場したかを数えてみましょう。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 分割代入で取り出した値が、「ない」ときは
+
+前回、分割代入で値をまとめて取り出せるようになりました。でも、取り出そうとした値そのものが「ない」ときはどうなるでしょうか。実はこれまでのレッスンで、もう何度もその答えを見てきました。配列の存在しない添字も、オブジェクトの存在しないキーも、`undefined`でした。
+
+JavaScriptには、「ない」を表す値がもう1つあります。`null`です。このレッスンでは、`undefined`と`null`という**ふたつの「ない」**を整理します。
+
+## undefined——JS自身が返す「まだ何もない」
+
+`undefined`は、値を用意していないときに、**JavaScript自身が自動的に**返してくる値です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-a"
+  initialCode={`const yatai = ["りんご飴"];
+console.log(yatai[5]);
+
+let zaiko;
+console.log(zaiko);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+undefined
+undefined
+```
+
+配列の存在しない添字（`yatai[5]`）も、値を入れていない変数（`let zaiko;`）も、どちらも`undefined`です。共通しているのは、**「値をまだ誰も入れていない」**という状態を、JavaScriptが自動的に埋めていることです。
+
+## null——自分で「ここは空だ」と示す値
+
+`null`は違います。JavaScript任せではなく、**自分で意図的に代入する**値です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-b"
+  initialCode={`let tantou = null;
+console.log(tantou);`}
+/>
+
+```console
+null
+```
+
+「今日の担当者は、まだ決まっていない」——そんなとき、`let tantou;`のままにして`undefined`任せにするのではなく、`let tantou = null;`と書いて「担当者は意図的に空である」とはっきり示せます。**undefinedは「JSが自動的に埋める、まだ何もない状態」、nullは「あなたが意図して空にした値」**——この違いが、ふたつの「ない」の境界線です。
+
+<Callout type="mame" title="typeof null は 'object' になる">
+`typeof null`を試すと、`"object"`という答えが返ってきます。`null`は「値がない」ことを表す値なのに、型としては`object`扱い——JavaScriptの言語仕様のごく初期からのふるまいで、今から直すと影響が大きすぎるため、そのまま残っています。`null`かどうかを調べたいときは`typeof`ではなく、`=== null`で直接比較してください。
+</Callout>
+
+`null`と`undefined`は、`===`で比べると別の値として扱われます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-c"
+  initialCode={`console.log(null === undefined);`}
+/>
+
+```console
+false
+```
+
+どちらも「ない」という感覚を表しますが、`===`は型も値も両方一致していないと`true`にならないので、`null === undefined`は`false`です。
+
+## 「ない」の先に、さらにアクセスすると
+
+ここまでは`undefined`や`null`そのものを表示するだけでした。でも、`undefined`の**先にあるプロパティ**にアクセスしようとすると、話が変わります。
+
+```js expect-error
+const mise = { namae: "りんご飴" };
+console.log(mise.nedan.taxIncluded);
+```
+
+実行すると、次のようなエラーになります（実際にはこの上にファイル名や行番号を示す行も表示されますが、ここではエラーの種類だけ示します）。
+
+```console
+TypeError: Cannot read properties of undefined (reading 'taxIncluded')
+```
+
+`mise`に`nedan`というキーはないので、`mise.nedan`は`undefined`です。そこからさらに`.taxIncluded`を読み取ろうとして、`undefined`にはプロパティが無いため、ここで初めて**エラーで止まりました**。配列やオブジェクトへの1段階のアクセスは`undefined`を返すだけでしたが、「`undefined`の先」を読もうとすると`TypeError`になります。
+
+<Callout type="warn" title="つまずきポイント：Cannot read properties of undefined">
+`TypeError: Cannot read properties of undefined (reading '...')`は、JavaScriptを書いていると何度も出会うエラーです。意味は「`undefined`のプロパティを読もうとした」——たどっている途中のどこかが`undefined`だった、ということです。エラーメッセージの`(reading '...')`の部分に、読もうとしたプロパティ名が出るので、どこでつまずいたかの手がかりになります。
+</Callout>
+
+## ?.——安全に、境界を越える
+
+「先が`undefined`かもしれないけれど、エラーにはしたくない」というときのための書き方があります。**オプショナルチェーン**（`?.`）です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-d"
+  initialCode={`const mise = { namae: "りんご飴" };
+console.log(mise.nedan?.taxIncluded);`}
+/>
+
+```console
+undefined
+```
+
+`.`の代わりに`?.`を使うと、「その手前が`undefined`か`null`だったら、エラーにせずそこで`undefined`を返して止まる」という動きになります。`mise.nedan`が`undefined`なので、`?.taxIncluded`は評価されず、全体として`undefined`が返ってきました。エラーにならずに済んでいます。
+
+配列でも同じように使えます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-e"
+  initialCode={`const yataiList = [{ namae: "りんご飴" }];
+console.log(yataiList[10]?.namae);`}
+/>
+
+```console
+undefined
+```
+
+`yataiList[10]`は存在しないので`undefined`です。ふつうに`.namae`とつなげていたら`TypeError`でしたが、`?.namae`にしたことで、安全に`undefined`が返ってきました。`?.`は、「先が無いかもしれない」場面のための**安全弁**です。
+
+<Exercise title="演習1: 値を入れていない変数を確かめる">
+
+`zaiko`という変数を、値を入れずに`let`で宣言し、その値と`typeof`の両方を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`let zaiko;`のように、値を代入せずに宣言するだけで`undefined`になります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let zaiko;
+console.log(zaiko);
+console.log(typeof zaiko);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+let zaiko;
+console.log(zaiko);
+console.log(typeof zaiko);
+```
+
+```console
+undefined
+undefined
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: nullとundefinedを比べる">
+
+`tantou`という変数に`null`を、`kyuukeichuu`という変数を値を入れずに宣言してください。`tantou === kyuukeichuu`、`tantou === null`、`kyuukeichuu === undefined`の3つを表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-ex2"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`null`は自分で代入する値、`undefined`は宣言だけして値を入れなかったときにJSが自動的に返す値です。`===`は型も値も一致していないと`true`になりません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let tantou = null;
+let kyuukeichuu;
+console.log(tantou === kyuukeichuu);
+console.log(tantou === null);
+console.log(kyuukeichuu === undefined);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+let tantou = null;
+let kyuukeichuu;
+console.log(tantou === kyuukeichuu);
+console.log(tantou === null);
+console.log(kyuukeichuu === undefined);
+```
+
+```console
+false
+true
+true
+```
+
+`tantou`（null）と`kyuukeichuu`（undefined）は、どちらも「ない」感覚を表しますが、`===`で比べると別の値として扱われるので、最初の行は`false`です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: ?.で安全にアクセスする">
+
+`{ namae: "りんご飴" }`というオブジェクト`yatai`があります。存在しない`eigyou`キーの、さらにその中の`jikan`というプロパティに、`?.`を使って安全にアクセスし、エラーにならず`undefined`が返ることを確かめてください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-06-ex3"
+  initialCode={`// ここに書いてみましょう
+const yatai = { namae: "りんご飴" };
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`yatai.eigyou`は`undefined`です。そこからさらに`.jikan`を`.`で読むとエラーになりますが、`?.`にすると安全です。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+console.log(yatai.eigyou?.jikan);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const yatai = { namae: "りんご飴" };
+console.log(yatai.eigyou?.jikan);
+```
+
+```console
+undefined
+```
+
+`yatai.eigyou`が`undefined`なので、`?.jikan`はそこで評価をやめて`undefined`を返します。もし`.jikan`（`?`なし）と書いていたら`TypeError`でした。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `undefined`は、値がまだ無いときにJavaScript自身が自動的に返す値
+- `null`は、「意図的に空である」ことを自分で示すために代入する値
+- `null === undefined`は`false`。どちらも「ない」感覚だが、別の値として扱われる
+- `undefined`（や`null`）の先のプロパティを`.`で読もうとすると`TypeError: Cannot read properties of undefined (reading '...')`になる
+- `?.`（オプショナルチェーン）を使うと、手前が`undefined`や`null`でもエラーにならず、安全に`undefined`が返る
+
+<Quiz
+  client:visible
+  storageKey="matomeru-06"
+  questions={[
+    {
+      q: 'undefinedとnullの違いとして正しいのは？',
+      choices: ['undefinedは自分で代入する値、nullはJSが自動的に返す値', 'nullは自分で代入する値、undefinedはJSが自動的に返す値', '同じ意味で、違いはない'],
+      answer: 1,
+      explain: 'undefinedは値が無いときにJSが自動的に埋める値、nullは「意図的に空である」と自分で示すために代入する値です。',
+    },
+    {
+      q: '`const mise = {}; console.log(mise.nedan.taxIncluded);` を実行するとどうなる？',
+      choices: ['undefinedが表示される', 'TypeErrorになる', 'nullが表示される'],
+      answer: 1,
+      explain: 'mise.nedanはundefinedです。undefinedのさらに先のプロパティを読もうとすると、TypeError: Cannot read properties of undefinedになります。',
+    },
+    {
+      q: '`obj.a?.b` という書き方の意図として正しいのは？',
+      choices: ['obj.aが必ず存在することを保証する', 'obj.aがundefinedやnullでもエラーにせず、undefinedを返す', 'obj.aをnullに変換する'],
+      answer: 1,
+      explain: 'オプショナルチェーン?.は、その手前がundefinedやnullだったときにエラーを起こさず、そこで評価をやめてundefinedを返す安全弁です。',
+    },
+  ]}
+/>

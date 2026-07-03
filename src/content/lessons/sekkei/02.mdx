@@ -1,0 +1,326 @@
+---
+title: アロー関数
+course: sekkei
+order: 2
+description: "=>という矢印で関数式を短く書く、アロー関数を学びます。式1つだけなら波かっこもreturnも省略できます。オブジェクトを返すときの落とし穴つきです。"
+seed: アロー関数の書き方が身につきました。次は、そのアロー関数を実際にどう使うかです。関数を渡した相手が「あとで呼び返してくれる」とき、その関数をコールバックと呼びます。
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## functionと書くのが、少し長く感じてきたら
+
+前回、`operate(a, b, operation)`に関数式をその場で渡しました。
+
+```js nocheck
+const result = operate(3, 4, function (x, y) {
+  return x + y;
+});
+```
+
+渡したいのは「`x`と`y`を受け取って、`x + y`を返す」というただ1行の処理なのに、`function`・引数の丸かっこ・波かっこ・`return`と、まわりの飾りが多く感じます。この「その場で渡す小さな関数」を短く書くための専用の書き方が、**アロー関数**です。
+
+## =>で書く
+
+同じ処理をアロー関数で書き直すと、こうなります。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-a"
+  initialCode={`function operate(a, b, operation) {
+  return operation(a, b);
+}
+
+const result = operate(3, 4, (x, y) => {
+  return x + y;
+});
+
+console.log(result);`}
+/>
+
+`function (x, y) { ... }`が`(x, y) => { ... }`になりました。`function`という単語が消え、引数リストの直後に`=>`（矢印）が入っただけです。中身の書き方——波かっこと`return`——は、そのままです。
+
+## 式が1つだけなら、波かっことreturnを省ける
+
+アロー関数の本領は、ここからです。関数の中身が「1つの式を計算して、その結果を返すだけ」なら、波かっこと`return`を省略できます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-b"
+  initialCode={`function operate(a, b, operation) {
+  return operation(a, b);
+}
+
+const result = operate(3, 4, (x, y) => x + y);
+
+console.log(result);`}
+/>
+
+`(x, y) => x + y`——これだけで「`x`と`y`を受け取り、`x + y`を返す関数」になります。波かっこがないときは、`=>`の右側に書いた式の値が、そのまま関数の戻り値になります。`return`を書く必要すらありません。
+
+<Callout type="warn" title="つまずきポイント：波かっこをつけたらreturnが必要">
+波かっこ`{ }`をつけた時点で、それは「複数の文を書ける本体」になります。中で何かを計算しても、`return`を書かなければ戻り値は`undefined`です。波かっこなしの省略形にだけ、自動で返す特典がついています。
+</Callout>
+
+## 引数が1つなら、丸かっこも省ける
+
+引数がちょうど1つのときは、その引数を囲む丸かっこも省略できます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-c"
+  initialCode={`const shout = (word) => word + "！";
+const shout2 = word => word + "！";
+
+console.log(shout("こんばんは"));
+console.log(shout2("こんばんは"));
+console.log(shout("こんばんは") === shout2("こんばんは"));`}
+/>
+
+`(word) => ...`も`word => ...`も、まったく同じ意味です。このサイトでは、読みやすさのために丸かっこをつける書き方を基本にしますが、省略した形もよく見かけるので、読めるようにしておいてください。**引数が0個、または2個以上のときは、丸かっこを省略できません。**
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-d"
+  initialCode={`const now = () => "縁日は夜からです";
+console.log(now());`}
+/>
+
+引数が0個のときは、`()`という空の丸かっこが必要です。省いてよいのは「丸かっこの中身」ではなく、「引数がちょうど1つのときの、丸かっこそのもの」だけです。
+
+## つまずきポイント：オブジェクトを返したいとき
+
+省略形には、有名な落とし穴が1つあります。オブジェクトをそのまま返したいときです。
+
+<Callout type="warn" title="つまずきポイント：{ }がオブジェクトなのか本体なのか、区別がつかない">
+次のコードは、一見オブジェクトを返しているように見えますが、実際には`undefined`が返ります。
+
+```js
+const makeStallWrong = (name, price) => { name, price };
+
+console.log(makeStallWrong("りんご飴", 300));
+```
+
+```console
+undefined
+```
+
+`=>`の直後の`{`は、「本体の始まり」と解釈されてしまいます。中の`name, price`は、オブジェクトのつもりで書いても、`,`で区切られた2つの式をただ評価するだけの文になり、`return`もないので何も返りません。**エラーにはならず、静かに`undefined`が流れます。**JSらしい、止まって教えてくれない例のひとつです。
+
+正しくオブジェクトを返すには、全体をもう一段、丸かっこで囲みます。
+
+```js
+const makeStall = (name, price) => ({ name, price });
+
+console.log(makeStall("りんご飴", 300));
+```
+
+```console
+{ name: 'りんご飴', price: 300 }
+```
+
+`({ ... })`と丸かっこで囲むことで、「これは本体のブロックではなく、丸かっこの中の式（オブジェクトリテラル）です」とJavaScriptに伝えられます。オブジェクトを返す省略形のアロー関数を書くときは、この丸かっこを忘れないでください。
+</Callout>
+
+## 使い分けの流儀——functionとアロー、どちらを使うか
+
+ここまでで、関数式もアロー関数も、どちらも関数の値を作れると分かりました。この縁日では、次の流儀で書き分けます。
+
+- **トップレベルの独立した手順**（プログラムの主な処理のまとまり）は、これまで通り`function`宣言で書く
+- **他の関数にその場で渡す、小さな関数**は、アロー関数で書く
+
+`operate`のような「独立して意味を持つ手順」は`function`のままにして、`(x, y) => x + y`のような「渡すためだけの小さな処理」をアロー関数にする、という使い分けです。これは文法上の決まりではなく、読みやすさのための、このサイトの流儀です。
+
+<Exercise title="演習1: applyTwiceに渡す関数をアロー関数で書く">
+
+次の`applyTwice`は、`fn`を`value`に2回続けて適用する関数です。`n`を3倍にするアロー関数`triple`を作り、`applyTwice(2, triple)`の結果を表示してください（`2`を3倍し、さらにその結果を3倍します）。
+
+```js nocheck
+function applyTwice(value, fn) {
+  return fn(fn(value));
+}
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-ex1"
+  initialCode={`// ここでtripleを作って試してみましょう
+function applyTwice(value, fn) {
+  return fn(fn(value));
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+「`n`を受け取って`n * 3`を返す」だけの、式1つのアロー関数です。波かっこも`return`もいりません。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const triple = (n) => ...;
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function applyTwice(value, fn) {
+  return fn(fn(value));
+}
+
+const triple = (n) => n * 3;
+
+console.log(applyTwice(2, triple));
+```
+
+`2`に`triple`を適用すると`6`、その`6`にもう一度`triple`を適用すると`18`になります。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: アロー関数でオブジェクトを返す">
+
+`name`と`price`を受け取り、`{ name, price }`という形のオブジェクトを返すアロー関数`makeItem`を、省略形（波かっこなし）で作ってください。オブジェクトを返すときの丸かっこの付け方に注意してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-ex2"
+  initialCode={`// ここでmakeItemを試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`makeStall`と同じ形です。`=>`の右側にそのまま`{ name, price }`と書くと本体のブロックだと誤解されるので、オブジェクト全体をもう一段、丸かっこで囲みます。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const makeItem = (name, price) => (...);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const makeItem = (name, price) => ({ name, price });
+console.log(makeItem("ラムネ", 200));
+```
+
+`({ name, price })`のように、オブジェクトリテラルを丸かっこで包むことで、「これは値です」とJavaScriptに伝えられます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: レッスン1のformal/casualをアロー関数に書き直す">
+
+レッスン1の演習2で作った`formal`・`casual`（`chooseGreeting`に渡す挨拶の関数）を、`function`式ではなくアロー関数の省略形で書き直してください。動きは前回とまったく同じになるはずです。
+
+```js nocheck
+function chooseGreeting(name, styleFn) {
+  return styleFn(name);
+}
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-02-ex3"
+  initialCode={`// ここでformalとcasualをアロー関数で書き直してみましょう
+function chooseGreeting(name, styleFn) {
+  return styleFn(name);
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`formal`も`casual`も「`name`を受け取って、テンプレートリテラルの文字列を1つ返す」だけの関数でした。式1つだけなので、省略形のアロー関数にぴったりです。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const formal = (name) => `...`;
+const casual = (name) => `...`;
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function chooseGreeting(name, styleFn) {
+  return styleFn(name);
+}
+
+const formal = (name) => `${name}様、ようこそいらっしゃいました`;
+const casual = (name) => `${name}、来たね！`;
+
+console.log(chooseGreeting("コウタ", formal));
+console.log(chooseGreeting("コウタ", casual));
+```
+
+``function (name) { return `...`; }`` が ``(name) => `...`;`` の1行になりました。渡す側の`chooseGreeting`は何も変えていません。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- アロー関数は`(引数) => 本体`という形で関数式を短く書く書き方
+- 本体が式1つだけなら、波かっこと`return`を省略できる。式の値がそのまま戻り値になる
+- 引数がちょうど1つのときは、丸かっこも省略できる。0個や2個以上のときは省略できない
+- 波かっこの省略形でオブジェクトを返すときは、`(name, price) => ({ ... })`のように、オブジェクト全体を丸かっこで囲む。囲まないと`{ }`が本体のブロックと解釈され、静かに`undefined`が返る
+- このサイトでは、トップレベルの独立した手順は`function`宣言、他の関数に渡す小さな関数はアロー関数、という流儀で書く
+
+<Quiz
+  client:visible
+  storageKey="sekkei-02"
+  questions={[
+    {
+      q: '`const double = n => n * 2;` について正しいのは？',
+      choices: [
+        '引数が1つなので、丸かっこを省略できる正しい書き方',
+        '丸かっこがないので構文エラーになる',
+        'nを2倍した結果ではなく、関数そのものの文字列が返る',
+      ],
+      answer: 0,
+      explain: '引数がちょうど1つのアロー関数は、その引数を囲む丸かっこを省略できます。',
+    },
+    {
+      q: '`const f = (a, b) => { a + b };` を `f(1, 2)` のように呼ぶと？',
+      choices: [
+        '3が返る',
+        'undefinedが返る（returnがないため）',
+        '構文エラーになる',
+      ],
+      answer: 1,
+      explain: '波かっこをつけた時点でreturnが必要です。中で計算だけして返さないと、戻り値はundefinedになります。',
+    },
+    {
+      q: '`name`と`price`から`{ name, price }`というオブジェクトを返す、省略形のアロー関数として正しいのはどれ？',
+      choices: [
+        '`(name, price) => { name, price };`',
+        '`(name, price) => ({ name, price });`',
+        '`(name, price) => [name, price];`',
+      ],
+      answer: 1,
+      explain: '省略形でオブジェクトを返すには、{ }を丸かっこで囲んで、本体のブロックと区別する必要があります。',
+    },
+  ]}
+/>

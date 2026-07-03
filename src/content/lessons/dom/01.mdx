@@ -1,0 +1,310 @@
+---
+title: DOMという木
+course: dom
+order: 1
+description: HTMLの最小限の読み方と、ブラウザがHTMLを「木」として保持していることを学びます。documentはその木への入口であり、このコースの相棒 HtmlRunner の使い方も身につけます。
+seed: 文書の形が分かりました。次は、この木の中から欲しい枝——たった1つの要素——を実際に取り出す方法です。
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+
+## これまでの相手は、コンソールだけでした
+
+ここまでの4つのコースで、値の種類、条件分岐、くりかえし、配列とオブジェクト、関数とclassまで、JavaScriptという言語そのものを見てきました。書いたコードの行き先は、いつも`console.log`でした。
+
+このコースからは、行き先が変わります。JavaScriptが本来生まれた場所——**Webページ**です。ボタンを押すと文字が変わる、入力欄に書いた名前が挨拶に反映される、そんな「動くページ」の裏側を、これから6レッスンで作れるようになります。まずは、その舞台であるHTMLの読み方からです。
+
+## HTMLは、入れ子でできている
+
+HTMLは、**タグ**で文章の意味を区切っていく言語です。開始タグと終了タグで挟まれた部分が、1つの**要素**になります。
+
+```html
+<p>今夜は縁日です。</p>
+```
+
+`<p>`が開始タグ、`</p>`が終了タグ、その間の「今夜は縁日です。」が中身です。要素は入れ子にできます。
+
+```html
+<div>
+  <h1>縁日へ、ようこそ</h1>
+  <p>今夜は屋台がいっぱいです。</p>
+</div>
+```
+
+`div`という要素の中に、`h1`と`p`という要素が入っています。この「外側と内側」の関係が、このあとの話の主役になります。
+
+要素には、**属性**という追加情報をつけられます。このコースでよく使うのは`id`と`class`の2つです。
+
+```html
+<p id="intro" class="message">今夜は屋台がいっぱいです。</p>
+```
+
+- `id`——その要素だけにつける名札。**1つの文書の中で、同じidは1つの要素にしか使いません**
+- `class`——グループにつける名札。**同じclassを、複数の要素につけてかまいません**
+
+この2つは、次のレッスンで「欲しい要素を取り出す」ための手がかりになります。
+
+<Callout type="mame" title="タグは全部終了タグが要るわけではない">
+`<p>`や`<div>`は開始タグと終了タグの対ですが、`<img>`や`<input>`のように、中身を持たず終了タグを書かないタグもあります。`input`はレッスン05で登場します。
+</Callout>
+
+## ブラウザは、HTMLを「木」として持っている
+
+ブラウザは、受け取ったHTMLの文字列をそのまま画面に貼り付けているわけではありません。タグの入れ子関係を読み取って、要素どうしの親子関係でできた**木構造**をメモリの中に作ります。これを**DOM**（Document Object Model、文書オブジェクトモデル）と呼びます。
+
+さきほどの縁日のHTMLを、少し増やしてみます。
+
+```html
+<h1>縁日へ、ようこそ</h1>
+<p id="intro">今夜は屋台がいっぱいです。</p>
+<ul>
+  <li class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+</ul>
+<button id="entry-btn">入り口はこちら</button>
+```
+
+これをブラウザが木にすると、次のような形になります。
+
+```text
+document
+└─ html
+   └─ body
+      ├─ h1 「縁日へ、ようこそ」
+      ├─ p#intro 「今夜は屋台がいっぱいです。」
+      ├─ ul
+      │  ├─ li.yatai 「りんご飴」
+      │  ├─ li.yatai 「金魚すくい」
+      │  └─ li.yatai 「ラムネ」
+      └─ button#entry-btn 「入り口はこちら」
+```
+
+`html`や`body`は、上のHTMLには書いていません。ブラウザは、書き忘れられていても文書全体を`html`と`body`で自動的に囲みます。この木の一番上、すべての要素への入り口になっているオブジェクトが**document**です。次のレッスンから、`document`を使ってこの木の中から欲しい枝を取り出していきます。
+
+<Callout type="note" title="documentはJavaScriptの言葉ではない">
+`document`はJavaScriptという言語そのものが持っている機能ではありません。**ブラウザが**、実行中のJavaScriptに向けて用意している入口です。コース1の最後で「Node.jsにはdocumentが無い」と学んだのを覚えているでしょうか。ブラウザという舞台があってはじめて、`document`は意味を持ちます。
+</Callout>
+
+## このコースの相棒——HtmlRunner
+
+これまでのCodeRunnerは、JavaScriptだけを実行して結果をコンソールに出す遊び場でした。このコースからは**HtmlRunner**を使います。HTMLとJavaScriptをまとめて書くと、その場でページとして描画してくれる遊び場です。書き換えて、すぐに結果を見てください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-01-a"
+  height={200}
+  initialHtml={`<h1>縁日へ、ようこそ</h1>
+<p id="intro">今夜は屋台がいっぱいです。</p>
+<ul>
+  <li class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+</ul>
+<button id="entry-btn">入り口はこちら</button>`}
+/>
+
+このHtmlRunnerには、まだJavaScriptを1行も書いていません。純粋なHTMLだけが、そのままページとして描画されています。文字を書き換えたり、`<li>`をもう1行増やしたりして、見た目がどう変わるか試してみてください。次のレッスンから、ここにJavaScriptを足していきます。
+
+<Exercise title="演習1: 屋台をもう1つ増やす">
+
+上のHtmlRunnerを参考に、`<ul>`の中に`<li class="yatai">かき氷</li>`を追加してください。木構造でいうと、`ul`の4人目の子供が増えることになります。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-01-b"
+  height={200}
+  initialHtml={`<h1>縁日へ、ようこそ</h1>
+<p id="intro">今夜は屋台がいっぱいです。</p>
+<ul>
+  <li class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+  <!-- ここに かき氷 の li を追加してください -->
+</ul>
+<button id="entry-btn">入り口はこちら</button>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`<li class="yatai">◯◯</li>`という同じ形の行を、既存の`<li>`と同じ深さ（インデント）で、`</ul>`の前に追加します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```html
+<li class="yatai">かき氷</li>
+```
+
+これを、コメント`<!-- ... -->`の行と入れ替えるか、その手前に足してください。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<ul>
+  <li class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+  <li class="yatai">かき氷</li>
+</ul>
+```
+
+`ul`という同じ親の下に、`li`という子が1人増えました。見た目では一覧に1行増え、木でいうと枝が1本増えたことになります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: idはひとつだけ">
+
+上の縁日のHTMLで、3つの屋台のうち、あなたが一番好きなものの`<li>`に`id="favorite"`をつけてください。`class="yatai"`はそのまま残してかまいません（1つの要素に、idとclassは両方つけられます）。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-01-c"
+  height={200}
+  initialHtml={`<ul>
+  <li class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+</ul>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+1つの要素には、`id`と`class`をどちらも書けます。並べる順番は決まっていません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```html
+<li id="favorite" class="yatai">◯◯</li>
+```
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```html
+<ul>
+  <li id="favorite" class="yatai">りんご飴</li>
+  <li class="yatai">金魚すくい</li>
+  <li class="yatai">ラムネ</li>
+</ul>
+```
+
+`id="favorite"`をつけた要素はこの文書の中で1つだけ、という約束があります。ほかの`<li>`にも同じ`id="favorite"`をつけてしまうと、次のレッスンで学ぶ「idで探す」がうまく動かなくなります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 木を描いてみる">
+
+次のHTMLを見て、親子関係を紙（かメモ帳）に書き出してみてください。書けたら、下のHtmlRunnerで実際の見た目を確認しましょう。
+
+```html
+<div id="yatai-shop">
+  <h2>金魚すくい</h2>
+  <p class="price">1回 300円</p>
+</div>
+```
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+一番外側の要素が木の根に近く、その中に書かれた要素が子供になります。このレッスンの「縁日へ、ようこそ」の木の図と同じ形で書いてみてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`div`の中に、`h2`と`p`という2人の子供がいる形になります。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```text
+document
+└─ html
+   └─ body
+      └─ div#yatai-shop
+         ├─ h2 「金魚すくい」
+         └─ p.price 「1回 300円」
+```
+
+</details>
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-01-d"
+  height={140}
+  initialHtml={`<div id="yatai-shop">
+  <h2>金魚すくい</h2>
+  <p class="price">1回 300円</p>
+</div>`}
+/>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- HTMLは、開始タグと終了タグで挟まれた**要素**が入れ子になってできている
+- `id`は1つの要素だけにつける名札、`class`は複数の要素につけてよいグループの名札
+- ブラウザはHTMLを、要素どうしの親子関係でできた**木構造**（DOM）としてメモリに持つ
+- `document`は、その木の一番上にある入口。JavaScriptから木の中に触れるための出発点
+- このコースからは**HtmlRunner**で、HTMLとJavaScriptをまとめて動かしながら学ぶ
+
+<Quiz
+  client:visible
+  storageKey="dom-01"
+  questions={[
+    {
+      q: 'id属性の性質として正しいのはどれ？',
+      choices: [
+        '1つの文書の中で、複数の要素につけてよい',
+        '1つの文書の中で、1つの要素にしかつけない',
+        'CSSやJavaScriptからは使えない、見た目だけの飾り',
+      ],
+      answer: 1,
+      explain: 'idはその要素だけを指す名札です。同じidを複数の要素につけると、次のレッスンで学ぶ「idで探す」操作が意図通りに動かなくなります。',
+    },
+    {
+      q: 'documentが表しているものは？',
+      choices: [
+        'ブラウザがHTMLから作った木構造全体への入口',
+        '書いたJavaScriptのコードそのもの',
+        'サーバーに保存されているHTMLファイル',
+      ],
+      answer: 0,
+      explain: 'documentは、ブラウザがHTMLを解析して作った木構造（DOM）の一番上にあるオブジェクトで、JavaScriptからその木に触れるための入口です。',
+    },
+    {
+      q: 'class属性の性質として正しいのはどれ？',
+      choices: [
+        '1つの文書の中で1つの要素にしか使えない',
+        '複数の要素に同じclassをつけてよい',
+        'idと同時にはつけられない',
+      ],
+      answer: 1,
+      explain: 'classは複数の要素に共通してつけられるグループの名札です。idと同時につけることもできます。',
+    },
+  ]}
+/>

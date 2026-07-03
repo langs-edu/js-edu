@@ -1,0 +1,309 @@
+---
+title: 配列を歩く（for-of）
+course: matomeru
+order: 2
+description: 配列の中身を先頭から順番に取り出すfor-ofを学びます。添字が必要なときの古典for、値の存在や位置を調べるincludes・indexOfもあわせて身につけます。
+seed: 配列は、同じ種類の値を並べるのに向いています。でも、名前と値のペアで1つのまとまりを表したいときもあります。次は、そのための道具——オブジェクトです。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## ひとつずつ、取り出したい
+
+前回、配列に値をまとめて、`yatai[0]`のように添字を1つずつ指定して取り出しました。でも、配列の中身を全部処理したいとき——たとえば全部の屋台名を表示したいとき——添字を`0`、`1`、`2`と手で書き並べるのは現実的ではありません。値がいくつ入っているか分からない配列なら、なおさらです。
+
+配列の中身を先頭から順番に取り出す、専用のくり返し構文があります。`for-of`です。
+
+## for-of——値を、順番に取り出す
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-a"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+for (const item of yatai) {
+  console.log(item);
+}`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+りんご飴
+たこ焼き
+金魚すくい
+```
+
+`for (const item of yatai)`は、「`yatai`の中身を先頭から1つずつ`item`という名前で取り出しながら、`{ }`の中をくり返す」という意味です。添字も`length`も、`i < yatai.length`のような条件式も、いっさい書いていません。配列の値をひとつずつ処理したいだけなら、`for-of`がいちばん素直な書き方です。
+
+## 添字が必要なときは、古典for
+
+`for-of`は値だけを渡してくれます。「1番目は、2番目は」のように順番の番号も表示したいときは、コース2で学んだ古典的な`for`に戻って、添字を自分で使います。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-b"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+for (let i = 0; i < yatai.length; i++) {
+  console.log(\`\${i + 1}番目: \${yatai[i]}\`);
+}`}
+/>
+
+```console
+1番目: りんご飴
+2番目: たこ焼き
+3番目: 金魚すくい
+```
+
+`yatai[i]`で値を、`i`そのもので添字を使えます。**添字が要らないなら`for-of`、添字が要るなら古典`for`**——これが、この縁日での使い分けです。
+
+<Callout type="mame" title="for-ofの変数を書き換えても、元の配列は変わらない">
+`for (let n of nums) { n = n * 2; }`のように取り出した変数へ代入しても、`nums`という配列そのものは変わりません。`n`には値がコピーされているだけだからです。配列の中身そのものを書き換えたいときは、添字を使った`yatai[i] = 新しい値`のように、古典`for`で書く必要があります。
+</Callout>
+
+## for-ofで、値を集計する
+
+`for-of`は表示するだけでなく、値を積み上げていく計算にもよく使います。コース2の`while`や古典`for`で書いた「合計を求める」パターンと、形は同じです。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-c"
+  initialCode={`const prices = [300, 450, 200, 500];
+let total = 0;
+for (const price of prices) {
+  total += price;
+}
+console.log(total);`}
+/>
+
+```console
+1450
+```
+
+`total`という変数を`0`で用意しておき、`for-of`で取り出した`price`を1つずつ足し込んでいきます。この「空の入れ物を用意して、くり返しながら積み上げる」形は、この先も何度も出てきます。
+
+## includes——値が入っているか調べる
+
+配列にある値が含まれているかどうかは、`includes`で調べられます。結果は`boolean`です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-d"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai.includes("たこ焼き"));
+console.log(yatai.includes("ラムネ"));`}
+/>
+
+```console
+true
+false
+```
+
+コース1で、文字列にも`includes`があったことを覚えていますか。`"りんご飴".includes("りんご")`のように、文字が含まれているかを調べる、あの`includes`と同じ発想です。文字列は文字の並び、配列は値の並び——「並びの中に、これが含まれているか」を調べる道具として、同じ名前のメソッドが用意されています。
+
+## indexOf——値の位置を調べる
+
+その値が何番目にあるかまで知りたいときは`indexOf`です。見つかった添字を返し、**見つからなければ`-1`を返します。**
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-e"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai.indexOf("たこ焼き"));
+console.log(yatai.indexOf("ラムネ"));`}
+/>
+
+```console
+1
+-1
+```
+
+`indexOf`が`-1`を返すのは、前回学んだ「存在しない添字は`undefined`」とは違う話です。`indexOf`自体は「見つからなかった」ことを、範囲外の添字にはなり得ない`-1`という数値で表しています。
+
+<Callout type="warn" title="つまずきポイント：indexOfの-1をif文でそのまま使わない">
+`-1`は数値なので、`if (yatai.indexOf("ラムネ"))`と書いてしまうと、`-1`はtruthyな値（`0`ではない数値）としてtrue扱いになり、「見つかった」と誤判定します。見つかったかどうかを調べたいだけなら`includes`を使うか、`indexOf(...) !== -1`のように明示的に比較してください。
+</Callout>
+
+<Exercise title="演習1: for-ofで、絵文字つきで表示する">
+
+好きな屋台の名前を3つ以上入れた配列を作り、`for-of`で1つずつ取り出しながら、それぞれの先頭に`"🏮 "`をつけて表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`for (const item of 配列名) { ... }`の中で、`console.log("🏮 " + item)`のように文字列を連結します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yatai = ["...", "...", "..."];
+for (const item of yatai) {
+  console.log("🏮 " + item);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js title="ex1.js"
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+for (const item of yatai) {
+  console.log("🏮 " + item);
+}
+```
+
+```console
+🏮 りんご飴
+🏮 たこ焼き
+🏮 金魚すくい
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 点数の合計を求める">
+
+`scores`という数値の配列`[80, 95, 70]`があります。`for-of`を使って合計を`total`という変数に積み上げ、最後に表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-ex2"
+  initialCode={`// ここに書いてみましょう
+const scores = [80, 95, 70];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+本文の`prices`の例と同じ形です。`0`で始まる変数を用意し、`for-of`の中で1つずつ足し込みます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let total = 0;
+for (const score of scores) {
+  total += score;
+}
+console.log(total);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const scores = [80, 95, 70];
+let total = 0;
+for (const score of scores) {
+  total += score;
+}
+console.log(total);
+```
+
+```console
+245
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: ラムネがあるか調べる">
+
+`yatai`という配列`["りんご飴", "たこ焼き", "金魚すくい", "ラムネ"]`に対して、`"ラムネ"`が含まれているかを`includes`で、含まれている位置を`indexOf`で調べて、それぞれ表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-02-ex3"
+  initialCode={`// ここに書いてみましょう
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい", "ラムネ"];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+存在するかどうかだけなら`includes`、何番目かまで知りたいなら`indexOf`です。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+console.log(yatai.includes("ラムネ"));
+console.log(yatai.indexOf("ラムネ"));
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい", "ラムネ"];
+console.log(yatai.includes("ラムネ"));
+console.log(yatai.indexOf("ラムネ"));
+```
+
+```console
+true
+3
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `for (const 変数 of 配列名) { ... }`で、配列の値を先頭から順番に取り出せる
+- 添字が要らないなら`for-of`、添字が要るなら古典`for`を使い分ける
+- `includes`は値が含まれているかを`boolean`で返す
+- `indexOf`は値の添字を返し、見つからなければ`-1`を返す
+
+<Quiz
+  client:visible
+  storageKey="matomeru-02"
+  questions={[
+    {
+      q: '`for (const item of yatai) { ... }` の`item`に入るのは？',
+      choices: ['添字（0, 1, 2...）', '配列の値そのもの', '配列の`length`'],
+      answer: 1,
+      explain: 'for-ofは配列の値を先頭から順番に取り出します。添字ではなく、値そのものが`item`に入ります。',
+    },
+    {
+      q: '`["a", "b"].indexOf("c")` の結果は？',
+      choices: ['`undefined`', '`-1`', '`0`'],
+      answer: 1,
+      explain: '`indexOf`は見つからなかったとき`-1`を返します。存在しない添字にアクセスしたときの`undefined`とは違う仕組みです。',
+    },
+    {
+      q: '添字（何番目か）が必要なとき、この縁日で使うのはどれ？',
+      choices: ['for-of', '古典for', 'while'],
+      answer: 1,
+      explain: 'for-ofは値だけを渡してくれます。添字が必要なら`let i = 0; i < 配列.length; i++`の古典forを使います。',
+    },
+  ]}
+/>

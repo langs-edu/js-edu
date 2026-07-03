@@ -1,0 +1,351 @@
+---
+title: 練習——単語カウンタ
+course: matomeru
+order: 7
+description: 文章を単語に分けて、それぞれの登場回数を数える単語カウンタを作ります。配列・オブジェクト・for-of・undefinedを総動員し、??（Nullish coalescing）をここで導入します。
+seed: 単語カウンタが動きました。配列・オブジェクト・分割代入・undefinedとnull——データをまとめる道具がひと通りそろいました。次のコースでは、JavaScriptの核心のひとつ、関数そのものに触れていきます。
+minutes: 30
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## ここまでの道具を、全部使う
+
+前回、`?.`で「ない」を安全に扱えるようになりました。このコースで学んだのは、配列、`for-of`、オブジェクト、ネスト、分割代入、`undefined`と`null`——データをまとめて扱うための道具です。最後に、それを1つの練習にまとめます。
+
+作るのは**単語カウンタ**です。1つの文章を単語に分けて、それぞれの単語が何回登場したかを数えます。
+
+## 文章を、単語に分ける
+
+文字列には`split`というメソッドがあります。指定した文字で文章を区切り、配列にして返します。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-a"
+  initialCode={`const text = "りんご飴 たこ焼き りんご飴 金魚すくい たこ焼き りんご飴";
+const words = text.split(" ");
+console.log(words);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+[ 'りんご飴', 'たこ焼き', 'りんご飴', '金魚すくい', 'たこ焼き', 'りんご飴' ]
+```
+
+`text.split(" ")`は、`text`を半角スペースで区切って、6個の文字列が入った配列にしています。ここから先は、この`words`という配列を相手にします。
+
+## オブジェクトで、数を数える
+
+単語ごとの登場回数を、オブジェクトに集計します。単語そのものをキーに、登場回数を値にします。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-b"
+  initialCode={`const text = "りんご飴 たこ焼き りんご飴 金魚すくい たこ焼き りんご飴";
+const words = text.split(" ");
+const counts = {};
+
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+
+console.log(counts);`}
+/>
+
+```console
+{ 'りんご飴': 3, 'たこ焼き': 2, '金魚すくい': 1 }
+```
+
+3回登場する`りんご飴`、2回の`たこ焼き`、1回の`金魚すくい`——ちゃんと数えられました。この`counts[word] = (counts[word] ?? 0) + 1;`という1行が、このレッスンの主役です。じっくり見ていきます。
+
+**なぜブラケット記法か。** `word`は`"りんご飴"`や`"たこ焼き"`のように、実行するまで中身が分からない変数です。レッスン3で学んだとおり、キーが変数のときはブラケット記法（`counts[word]`）を使うのでした。
+
+**なぜ`?? 0`か。** `word`が初めて登場したとき、`counts[word]`はまだキーが無いので`undefined`です（レッスン3・6の復習です）。`undefined`のまま`+ 1`しようとすると、期待通りの数値にはなりません。そこで`counts[word] ?? 0`——「`counts[word]`が`undefined`か`null`なら`0`、そうでなければその値」を使うことで、初めての単語は`0 + 1`で`1`から、2回目以降は今までの数に`+ 1`で数えられます。
+
+## ??（Nullish coalescing）という演算子
+
+`??`は**Nullish coalescing**（ヌリッシュ・コアレシング）演算子と呼ばれ、「左側が`undefined`か`null`なら右側を使う、そうでなければ左側をそのまま使う」という意味です。
+
+似た働きをする`||`と比べると、`??`のありがたさが分かります。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-c"
+  initialCode={`console.log(0 || 5);
+console.log(0 ?? 5);`}
+/>
+
+```console
+5
+0
+```
+
+コース2で、`0`は**falsy**な値だと学びました。`||`は「左側がfalsyなら右側」なので、`0 || 5`は`0`をfalsyとみなして`5`を返してしまいます。今回のカウンタで`||`を使っていたら、登場回数が`0`回のところで毎回`5`にすり替わり、正しく数えられません。`??`が見ているのは「`undefined`か`null`か」だけです。`0`はどちらでもないので、`0 ?? 5`は`0`のままです。**「まだ無い」と「0という有効な値」を区別したいときは、`||`ではなく`??`を使います。**
+
+## 一番よく出てくる単語を探す
+
+数えながら、同時に「今のところ一番多い単語」も記録できます。レッスン4で書いた「一番高い屋台を探す」と同じ発想です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-d"
+  initialCode={`const text = "りんご飴 たこ焼き りんご飴 金魚すくい たこ焼き りんご飴";
+const words = text.split(" ");
+const counts = {};
+let maxWord = "";
+let maxCount = 0;
+
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+  if (counts[word] > maxCount) {
+    maxCount = counts[word];
+    maxWord = word;
+  }
+}
+
+console.log(counts);
+console.log(\`最頻出: \${maxWord}（\${maxCount}回）\`);`}
+/>
+
+```console
+{ 'りんご飴': 3, 'たこ焼き': 2, '金魚すくい': 1 }
+最頻出: りんご飴（3回）
+```
+
+1つの`for-of`の中で、数えることと、最大を更新することを同時にやっています。単語を数えるたびに、「今数えたばかりの回数が、これまでの最大を超えたか」をその場でチェックしているので、あとから配列やオブジェクトをもう一度たどる必要がありません。
+
+<Callout type="mame" title="単語ごとに数を数える別の道具">
+オブジェクトの代わりに`Map`という専用の道具を使う書き方もあります。キーに文字列以外も使えたり、順番が保証されたりと便利な性質がありますが、このコースではまだ扱いません。オブジェクトでの集計は、素朴でも十分実用的な方法です。
+</Callout>
+
+<Exercise title="演習1: 別の文章で数える">
+
+`"ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー"`という文章を単語に分け、それぞれの登場回数を数えて`counts`として表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+本文の`counts`を作る手順とまったく同じです。`split(" ")`で単語に分け、`for-of`で数えます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+const words = text.split(" ");
+const counts = {};
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+console.log(counts);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+const words = text.split(" ");
+const counts = {};
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+console.log(counts);
+```
+
+```console
+{ 'ラムネ': 3, 'ヨーヨー': 2, 'たこ焼き': 1 }
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 一番少ない単語を探す">
+
+演習1と同じ文章で、今度は一番登場回数が**少ない**単語を探して`最少出: 単語（N回）`の形で表示してください。本文の「最頻出」の探し方の`>`を`<`に変えれば作れます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-ex2"
+  initialCode={`// ここに書いてみましょう
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+最初の基準として`minWord`・`minCount`を、最初の単語（`words[0]`）の情報で初期化しておきます。あとは`counts[word] < minCount`なら更新、という比較です。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const words = text.split(" ");
+const counts = {};
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+
+let minWord = words[0];
+let minCount = counts[words[0]];
+for (const word of words) {
+  if (counts[word] < minCount) {
+    minCount = counts[word];
+    minWord = word;
+  }
+}
+console.log(`最少出: ${minWord}（${minCount}回）`);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+const words = text.split(" ");
+const counts = {};
+for (const word of words) {
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+
+let minWord = words[0];
+let minCount = counts[words[0]];
+for (const word of words) {
+  if (counts[word] < minCount) {
+    minCount = counts[word];
+    minWord = word;
+  }
+}
+
+console.log(`最少出: ${minWord}（${minCount}回）`);
+```
+
+```console
+最少出: たこ焼き（1回）
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 何種類の単語が出てきたか数える">
+
+演習1と同じ文章で、**何種類の異なる単語**が登場したか（同じ単語をまとめて1種類と数えた数）を`distinct`という変数に数えて表示してください。「その単語をまだ1度も数えていないとき」を`counts[word] === undefined`で見分けます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-07-ex3"
+  initialCode={`// ここに書いてみましょう
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`counts[word]`を更新する**前に**、それが`undefined`かどうかを調べます。`undefined`なら「初めて見る単語」なので、`distinct`を1増やしてから、いつもどおり数えます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const words = text.split(" ");
+const counts = {};
+let distinct = 0;
+
+for (const word of words) {
+  if (counts[word] === undefined) {
+    distinct++;
+  }
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+
+console.log(distinct);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const text = "ラムネ ヨーヨー ラムネ たこ焼き ラムネ ヨーヨー";
+const words = text.split(" ");
+const counts = {};
+let distinct = 0;
+
+for (const word of words) {
+  if (counts[word] === undefined) {
+    distinct++;
+  }
+  counts[word] = (counts[word] ?? 0) + 1;
+}
+
+console.log(distinct);
+```
+
+```console
+3
+```
+
+`ラムネ`・`ヨーヨー`・`たこ焼き`の3種類です。`if`の判定を、数を更新する**前**に置くのがポイントです。先に更新してしまうと、`counts[word]`は二度と`undefined`にならず、正しく数えられません。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `文字列.split(区切り文字)`で、文字列を配列に分割できる
+- `counts[word] = (counts[word] ?? 0) + 1;`は、オブジェクトを使った集計の定番のかたち
+- `??`（Nullish coalescing）は、左側が`undefined`か`null`のときだけ右側を使う。`0`のような有効なfalsy値を巻き込む`||`とは違う
+- 1つの`for-of`の中で、集計と同時に最大・最小の追跡もできる
+- このコースで学んだ配列・オブジェクト・for-of・分割代入・undefined/nullは、組み合わせて初めて実用的な力になる
+
+<Quiz
+  client:visible
+  storageKey="matomeru-07"
+  questions={[
+    {
+      q: '`counts[word] = (counts[word] ?? 0) + 1;` で、`word`が初めて登場したときの`counts[word] ?? 0`の値は？',
+      choices: ['`undefined`', '`0`', '`NaN`'],
+      answer: 1,
+      explain: '初めての単語ではcounts[word]はundefinedです。??はundefinedのときに右側の0を返すので、結果は0になります。',
+    },
+    {
+      q: '`counts[word]`のようにブラケット記法を使うのはなぜ？',
+      choices: ['ドット記法は配列に使えないから', 'wordが実行するまで中身の分からない変数だから', '見た目をそろえるための好みの問題だから'],
+      answer: 1,
+      explain: 'ドット記法はキー名をそのままコードに書きます。wordのように中身が変わる変数をキーにするには、ブラケット記法が必要です。',
+    },
+    {
+      q: '`0 || 5` と `0 ?? 5` の結果の組み合わせとして正しいのは？',
+      choices: ['5, 5', '5, 0', '0, 0'],
+      answer: 1,
+      explain: '0はfalsyなので||は右側の5を返します。??が見るのはundefined・nullだけなので、0はそのまま返ります。',
+    },
+  ]}
+/>

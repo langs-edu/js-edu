@@ -1,0 +1,174 @@
+---
+import { withBase } from '../../utils/url';
+
+const path = Astro.url.pathname;
+const links = [
+  { href: withBase('/courses/'), label: 'コース' },
+  { href: withBase('/yatai/'), label: '屋台のこぼれ話' },
+  { href: withBase('/about/'), label: 'このサイトについて' },
+];
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href={withBase('/')}>
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path
+          d="M16 4.5c-4 0-7 2.6-7 6.6 0 2.4 1.3 4 2.6 5.4-1.7.6-2.9 2.2-2.9 4.1 0 2.4 2.2 4.4 5 4.9v1.5a1 1 0 0 0 2 0v-1.4h.6v1.4a1 1 0 0 0 2 0v-1.5c2.8-.5 5-2.5 5-4.9 0-1.9-1.2-3.5-2.9-4.1 1.3-1.4 2.6-3 2.6-5.4 0-4-3-6.6-7-6.6z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linejoin="round"></path>
+        <path d="M11 20.2h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.6"
+        ></path>
+      </svg>
+      <span class="brand-name">JavaScript縁日</span>
+    </a>
+    <nav aria-label="メイン">
+      <ul class="nav-list">
+        {
+          links.map((l) => (
+            <li>
+              <a href={l.href} aria-current={path.startsWith(l.href) ? 'page' : undefined}>
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="昼と夜を切り替える">
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+        <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 2.5v2.5M12 19v2.5M2.5 12h2.5M19 12h2.5M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"></path>
+        </g>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5Z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<script>
+  const btn = document.getElementById('theme-toggle');
+  btn?.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('ennichi:theme', next);
+  });
+</script>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--c-line);
+    background: color-mix(in srgb, var(--c-paper) 88%, transparent);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 3.5rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    text-decoration: none;
+    color: var(--c-ink);
+    margin-right: auto;
+  }
+
+  .brand-mark {
+    width: 1.7rem;
+    height: 1.7rem;
+    color: var(--c-aka);
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: var(--tracking-display);
+  }
+
+  .nav-list {
+    display: flex;
+    gap: var(--space-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-list a {
+    color: var(--c-ink-2);
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding-block: 0.4em;
+  }
+
+  .nav-list a:hover,
+  .nav-list a[aria-current='page'] {
+    color: var(--c-kon);
+  }
+
+  .nav-list a[aria-current='page'] {
+    border-bottom: 2px solid var(--c-kon);
+  }
+
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 50%;
+    width: 2.4rem;
+    height: 2.4rem;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--c-ink-2);
+    transition: color var(--dur-fast) ease;
+  }
+
+  .theme-toggle:hover {
+    color: var(--c-aka);
+  }
+
+  .theme-toggle svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    grid-area: 1 / 1;
+  }
+
+  .icon-moon {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .icon-sun {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .icon-moon {
+    display: block;
+  }
+
+  @media (max-width: 640px) {
+    .nav-list {
+      gap: var(--space-3);
+    }
+    .nav-list a {
+      font-size: 0.85rem;
+    }
+  }
+</style>

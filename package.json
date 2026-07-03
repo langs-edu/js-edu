@@ -1,0 +1,48 @@
+{
+  "name": "js-ennichi",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JavaScript縁日 — さわって、動かして、おぼえる。無料のJavaScript学習サイト",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "check:js": "node scripts/check-js.mjs",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:unit:coverage": "vitest run --coverage",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^6.0.3",
+    "@astrojs/preact": "^5.1.5",
+    "@astrojs/sitemap": "^3.6.0",
+    "@codemirror/commands": "^6.8.0",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/language": "^6.11.0",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/view": "^6.36.0",
+    "@lezer/highlight": "^1.2.3",
+    "@nanostores/persistent": "^1.3.4",
+    "@nanostores/preact": "^1.0.0",
+    "astro": "^6.4.6",
+    "astro-expressive-code": "^0.43.1",
+    "nanostores": "^1.3.0",
+    "preact": "^10.29.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@vitest/coverage-v8": "^4.1.8",
+    "prettier": "^3.5.0",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

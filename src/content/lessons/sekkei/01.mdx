@@ -1,0 +1,355 @@
+---
+title: 関数は、値
+course: sekkei
+order: 1
+description: 関数を変数に代入したり、引数として渡したりできることを体験します。JavaScriptでは関数もまた値である、というコース4でいちばん大事な核心に触れる出発点です。
+seed: 関数を値として渡せるようになりました。でも、その場限りの小さな関数を渡すたびに毎回functionと書くのは、少し長く感じます。次は、それを短く書くための道具——アロー関数です。
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 関数にも、typeofで型がある
+
+前回までで、配列とオブジェクトを組み合わせてデータをまとめ、`function`で手順に名前をつけて使ってきました。ここまでの関数は、いつも`function 名前(引数) { ... }`という決まった形でした。
+
+コース4では、この関数を少し違う角度から見ます。JavaScriptでは、**関数もまた値の一種**です。数値や文字列と同じように、`typeof`で型を確かめられます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-a"
+  initialCode={`function greet(name) {
+  return \`こんにちは、\${name}さん\`;
+}
+
+console.log(typeof greet);
+console.log(greet("ここね"));`}
+/>
+
+`typeof greet`は`"function"`を返します。`number`や`string`と並ぶ、れっきとした型のひとつです。「関数は値である」というのが、このレッスンでいちばん伝えたいことです。
+
+<Callout type="mame" title="なぜobjectじゃなくfunctionなの？">
+JavaScriptの関数は、実は「呼び出せる性質を持ったオブジェクト」の一種です。それでも`typeof`は`"object"`ではなく`"function"`という専用の答えを返してくれます。呼び出せるかどうかをすぐ見分けられるようにという、使い勝手のための特別あつかいです。
+</Callout>
+
+## 関数を、別の名前で呼ぶ
+
+値であるなら、他の値と同じように、別の変数に代入できるはずです。試してみましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-b"
+  initialCode={`function greet(name) {
+  return \`こんにちは、\${name}さん\`;
+}
+
+const sayHello = greet;
+console.log(sayHello("コウタ"));
+console.log(sayHello === greet);`}
+/>
+
+`const sayHello = greet;`は、`greet`という関数の値を、`sayHello`という別の名前でも指せるようにしています。`sayHello("コウタ")`は`greet("コウタ")`とまったく同じ意味です。最後の行の`sayHello === greet`が`true`になることからも、2つの名前が同じひとつの関数を指していると分かります。数や文字列に別名をつけるのと、何も変わりません。
+
+## 名前のない関数——関数式
+
+ここまでは、先に`function greet(name) { ... }`という宣言があって、それを別名で呼び直しただけでした。でも、関数の値がほしいだけなら、そもそも名前をつけた宣言を経由する必要はありません。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-c"
+  initialCode={`const greet2 = function (name) {
+  return \`ようこそ、\${name}さん\`;
+};
+
+console.log(typeof greet2);
+console.log(greet2("あかり"));`}
+/>
+
+`function`の直後に名前がありません。この、名前を持たない関数の値を作る書き方を**関数式**と呼びます。`greet2`という名前は、あくまで`const`で値につけた変数名であって、関数そのものの名前ではありません。関数式が作る関数のことを、そのまま**無名関数**（名前のない関数）と呼ぶこともあります。
+
+これまでの`function greet(name) { ... }`という書き方は**関数宣言**と呼びます。「宣言」と「式」、似ていますが中身は少し違います。
+
+<Callout type="warn" title="つまずきポイント：関数宣言と関数式で、使える時点が違う">
+関数宣言は、ファイルの読み込み時点で先に登録されるため、定義より前の行から呼び出せます。関数式は`const`や`let`への代入なので、変数と同じルールに従い、代入の行より前では使えません。
+
+```js expect-error
+console.log(sayLater("ここね"));
+
+const sayLater = function (name) {
+  return `あとで、${name}さん`;
+};
+```
+
+実行すると、次のようなエラーになります（実際にはこの上にファイル名や行番号を示す行も表示されますが、ここではエラーの種類だけ示します）。
+
+```console
+ReferenceError: Cannot access 'sayLater' before initialization
+```
+
+「先に使える関数宣言」と「代入した行から使える関数式」——この違いを知っておくと、思わぬ`ReferenceError`に出会ったときにあわてずに済みます。
+</Callout>
+
+## 関数を、引数として渡す
+
+値であるなら、他の関数の**引数として渡す**こともできます。ここがコース4でいちばん大事な一歩です。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-d"
+  initialCode={`function operate(a, b, operation) {
+  return operation(a, b);
+}
+
+const result = operate(3, 4, function (x, y) {
+  return x + y;
+});
+
+console.log(result);`}
+/>
+
+`operate`は、3つ目の引数として**関数そのもの**を受け取り、`operation(a, b)`という形でそれを呼び出しています。呼び出す側は、`operate(3, 4, ...)`のところで「3と4に対して、何をするか」を関数式としてその場で渡しています。渡す関数式を`function (x, y) { return x - y; }`に変えれば、同じ`operate`が引き算にもなります。**「何をするか」を、値として持ち運べる**——これが、関数が値であることの実用的な意味です。
+
+## 関数を、オブジェクトにしまう
+
+関数が値なら、オブジェクトのプロパティにもできます。コース3で学んだドット記法・ブラケット記法が、そのまま使えます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-e"
+  initialCode={`const ops = {
+  add: function (a, b) {
+    return a + b;
+  },
+  sub: function (a, b) {
+    return a - b;
+  },
+};
+
+console.log(ops.add(10, 3));
+console.log(ops["sub"](10, 3));`}
+/>
+
+`ops`というオブジェクトの`add`キーにも`sub`キーにも、関数の値が入っています。`ops.add(10, 3)`は「`ops`の`add`プロパティが指す関数を、`10`と`3`を引数にして呼び出す」という意味です。文字列のキーで呼び出す`ops["sub"](10, 3)`も同じように動きます。この「名前と処理をひとまとめにする」形は、レッスン5の`class`につながっていきます。
+
+<Exercise title="演習1: 関数宣言を、関数式に書き直す">
+
+次の関数宣言と同じ動きをする関数を、関数式で作ってください。変数名は`square2`とします。
+
+```js nocheck
+function square(n) {
+  return n * n;
+}
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-ex1"
+  initialCode={`// ここでsquareの関数式版(square2)を試してみましょう
+function square(n) {
+  return n * n;
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+関数式は、`function`の後ろに名前を書かず、`const 変数名 = function (引数) { ... };`という形で書きます。中身（引数と処理）は、元の関数宣言とそっくり同じにするだけです。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const square2 = function (...) {
+  ...
+};
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function square(n) {
+  return n * n;
+}
+
+const square2 = function (n) {
+  return n * n;
+};
+
+console.log(square(4));
+console.log(square2(4));
+```
+
+どちらも`16`を返します。書き方が違うだけで、できあがる関数の値としての働きは同じです。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 渡す関数を変えて、挨拶の雰囲気を変える">
+
+`chooseGreeting(name, styleFn)`という関数を作ってください。`styleFn`は`name`を受け取って挨拶の文字列を返す関数です。`chooseGreeting`自身は、受け取った`styleFn`に`name`を渡して呼び出し、その結果をそのまま返すだけにしてください。そのうえで、丁寧な挨拶を返す関数式`formal`と、くだけた挨拶を返す関数式`casual`を用意し、両方を`chooseGreeting`に渡して結果を比べてください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-ex2"
+  initialCode={`// ここでchooseGreetingを試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`operate(a, b, operation)`の例と同じ形です。`chooseGreeting`は自分では挨拶の中身を作らず、渡された`styleFn`に丸ごとおまかせします。「何をするか」を決めるのは、呼び出す側が渡す関数の方です。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function chooseGreeting(name, styleFn) {
+  return styleFn(...);
+}
+
+const formal = function (name) {
+  return `...`;
+};
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function chooseGreeting(name, styleFn) {
+  return styleFn(name);
+}
+
+const formal = function (name) {
+  return `${name}様、ようこそいらっしゃいました`;
+};
+
+const casual = function (name) {
+  return `${name}、来たね！`;
+};
+
+console.log(chooseGreeting("コウタ", formal));
+console.log(chooseGreeting("コウタ", casual));
+```
+
+同じ`chooseGreeting`、同じ`"コウタ"`という名前なのに、渡す関数を`formal`から`casual`に変えるだけで結果ががらりと変わります。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: opsオブジェクトに、掛け算を追加する">
+
+本文の`ops`オブジェクトに、掛け算を行う`mul`という関数を追加してください。`ops.mul(4, 5)`と`ops["mul"](4, 5)`の両方が`20`を返すことを確認してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-01-ex3"
+  initialCode={`// ここでopsにmulを追加して試してみましょう
+const ops = {
+  add: function (a, b) {
+    return a + b;
+  },
+  sub: function (a, b) {
+    return a - b;
+  },
+};
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+すでにあるオブジェクトに新しいプロパティを追加するのは、コース3で学んだ`オブジェクト.新しいキー = 値`という代入と同じです。値として関数式を代入すれば、そのキーは関数になります。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+ops.mul = function (a, b) {
+  return ...;
+};
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const ops = {
+  add: function (a, b) {
+    return a + b;
+  },
+  sub: function (a, b) {
+    return a - b;
+  },
+};
+
+ops.mul = function (a, b) {
+  return a * b;
+};
+
+console.log(ops.mul(4, 5));
+console.log(ops["mul"](4, 5));
+```
+
+`ops.mul = function (a, b) { ... };`で、あとから`mul`というキーに関数の値を追加できます。ドット記法でもブラケット記法でも、同じ関数を呼び出せます。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- JavaScriptでは、関数もまた値の一種。`typeof`で確かめると`"function"`が返る
+- 関数の値は、`const 名前 = 既存の関数`のように別の変数に代入できる
+- `function`の後ろに名前を書かない**関数式**で、名前のない関数の値をその場で作れる
+- 関数宣言は定義より前から呼べるが、関数式は代入の行より前では使えない（変数と同じルール）
+- 関数の値は、他の関数の**引数として渡せる**。「何をするか」を持ち運べることが、関数が値であることの実用的な意味
+- 関数の値は、オブジェクトのプロパティにもできる。`obj.method()`という形は、次のレッスン以降でも繰り返し出てくる
+
+<Quiz
+  client:visible
+  storageKey="sekkei-01"
+  questions={[
+    {
+      q: '次のうち、`typeof`で`"function"`が返るのはどれ？',
+      choices: [
+        '`const greet = function (name) { return name; };` の `greet`',
+        '`const greet = "こんにちは";` の `greet`',
+        '`const greet = 3;` の `greet`',
+      ],
+      answer: 0,
+      explain: '関数の値を持つ変数は、typeofで確かめると"function"が返ります。文字列や数値とは別の型として扱われます。',
+    },
+    {
+      q: '`function greet(name) { ... }` のあと `const sayHello = greet;` としたとき、正しいのは？',
+      choices: [
+        'sayHelloはgreetの中身をコピーした、別の関数になる',
+        'sayHelloとgreetは同じひとつの関数の値を指す（sayHello === greetはtrue）',
+        'sayHelloを呼び出すとエラーになる',
+      ],
+      answer: 1,
+      explain: '関数を変数に代入しても複製は作られません。同じ関数の値に、もうひとつ別の名前がついただけです。',
+    },
+    {
+      q: '関数宣言と関数式のちがいとして正しいのは？',
+      choices: [
+        '関数式は定義より前の行からでも呼び出せるが、関数宣言はできない',
+        '関数宣言は定義より前の行からでも呼び出せるが、関数式は代入の行より前では使えない',
+        '両者にちがいはなく、どちらも定義より前から自由に呼び出せる',
+      ],
+      answer: 1,
+      explain: '関数宣言は先に登録されるため前から呼べますが、関数式はconst/letへの代入なので、代入の行より前で使うとReferenceErrorになります。',
+    },
+  ]}
+/>

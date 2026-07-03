@@ -1,0 +1,248 @@
+---
+title: データとlocalStorage
+course: koubou
+order: 2
+description: storage.jsの仮の保存を、ブラウザの本物のlocalStorageに置き換えます。JSON.stringify/parseとの組み合わせ(コース4の伏線回収)と、ブラウザに保存されることの意味と限界を扱います。
+seed: 記録は残るようになりました。でも今のhondanaは、まだ画面に数を表示するだけです。次は、1冊ずつの中身が見える、本物の一覧を作ります。
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 記憶を、ページを閉じても残るものに
+
+前回の`storage.js`は、`let books = []`という、ただの変数でした。ページを閉じたり再読み込みしたりすれば、この記録はきれいさっぱり消えます。今日のゴールは、本の記録をブラウザに保存し、次に開いたときも読み込めるようにすることです。
+
+使うのは、ブラウザが持っている`localStorage`という道具です。
+
+## localStorageは、文字列だけのキーと値の保存箱
+
+`localStorage`は、`キー`と`値`の組を、ブラウザの中に保存しておける仕組みです。使い方はとても単純で、2つのメソッドだけで足ります。
+
+- `localStorage.setItem(キー, 値)` — 保存する
+- `localStorage.getItem(キー)` — 取り出す。保存されていなければ`null`
+
+ブラウザの開発者ツールのコンソールで試すと、こう動きます。
+
+```console
+localStorage.setItem("hondana-books", JSON.stringify([{ title: "三体", author: "劉慈欣", rating: 5, review: "スケールがすごい" }]));
+console.log(localStorage.getItem("hondana-books"));
+console.log(localStorage.getItem("nothing-here"));
+```
+
+```console
+[{"title":"三体","author":"劉慈欣","rating":5,"review":"スケールがすごい"}]
+null
+```
+
+ここで大事な制限が1つあります。**`localStorage`に保存できるのは、文字列だけです。** 数値や真偽値を渡すと自動的に文字列に変換されますが、配列やオブジェクトをそのまま渡すと、`"[object Object]"`のような、中身の分からない文字列になってしまいます。
+
+## JSON.stringify/parseの、伏線回収
+
+配列やオブジェクトを保存したいなら、まず文字列に変換する必要があります。ここで、コース4で学んだ`JSON.stringify`と`JSON.parse`が働きます。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-02-a"
+  initialCode={`const books = [
+  { title: "三体", author: "劉慈欣", rating: 5, review: "スケールがすごい" },
+];
+
+const json = JSON.stringify(books);
+console.log(json);
+console.log(typeof json);
+
+const revived = JSON.parse(json);
+console.log(revived);
+console.log(revived[0].title);`}
+/>
+
+`JSON.stringify(books)`で、配列をまるごと1本の文字列にします。これなら`localStorage.setItem`にそのまま渡せます。読み込むときは`JSON.parse(json)`で、文字列を配列とオブジェクトに戻します。レッスン1で見た「classはJSON化するとメソッドが失われる」という話を思い出してください。hondanaの本はもともとメソッドを持たないプレーンオブジェクトなので、この行き来で失われるものは何もありません。
+
+## storage.jsを、本物にする
+
+`loadBooks`と`saveBooks`という名前と役割は変えず、中身だけを`localStorage`を使う本物の実装に置き換えます。
+
+```js title="storage.js"
+// storage.js
+// 本の一覧を、ブラウザのlocalStorageへ保存・読み込みする係。
+
+const STORAGE_KEY = "hondana-books";
+
+export function loadBooks() {
+  const json = localStorage.getItem(STORAGE_KEY);
+  if (json === null) {
+    return [];
+  }
+  return JSON.parse(json);
+}
+
+export function saveBooks(books) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+}
+```
+
+<Callout type="note" title="hondana.jsは、1行も変えていません">
+`loadBooks`と`saveBooks`という名前、受け取る引数、返す値の形——この「外から見た約束」がレッスン1と変わっていないので、`hondana.js`は前回のままで動きます。中の仕組みを「その場限りの記憶」から「本物の保存」に差し替えても、呼び出す側は何も知らなくていい。これが、モジュールを分けておく利点の1つです。
+</Callout>
+
+`STORAGE_KEY`という定数に`"hondana-books"`という名前を1か所にまとめているのにも意味があります。この文字列を`localStorage`のキーとして毎回タイプすると、どこかで綴りを間違えたときに気づきにくくなります。1か所にまとめておけば、間違えようがありません。
+
+## ブラウザに保存される、ということの意味
+
+`localStorage`は便利ですが、いくつか誠実に知っておくべき限界があります。
+
+- **そのブラウザ・そのオリジン(サイト)だけ**に保存されます。別のブラウザや、シークレットウィンドウ、別のパソコンからは見えません
+- ブラウザの設定で「サイトデータを消去」すると、保存した記録も一緒に消えます
+- 保存できる容量には上限があります(ブラウザによって違いますが、数MB程度が目安です)。hondanaのような小さなテキスト記録なら、まず心配いりません
+
+「サーバーに預ける」のではなく「この端末のこのブラウザに置いておく」——localStorageはそういう保存です。この性質は、次のレッスンで一覧を作るときにも関わってきます。
+
+`localStorage.getItem`は、保存されていないキーに対して`null`を返します。もし`if (json === null)`のチェックを忘れて`JSON.parse(null)`を呼んだら、どうなるでしょうか。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-02-b"
+  initialCode={`const stored = null; // まだ何も保存されていないときを想定
+const books = JSON.parse(stored);
+console.log(books);`}
+/>
+
+エラーにならず、`null`という値がそのまま返ってきます。**`JSON.parse`は、渡された`null`を文字列`"null"`として解釈し、それをパースした結果の`null`という値を返す**からです。ここまでは何も起きません。危険なのはこのあとです。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-02-c"
+  expectError
+  initialCode={`const stored = null;
+const books = JSON.parse(stored);
+console.log(\`\${books.length}冊\`);`}
+/>
+
+```console
+TypeError: Cannot read properties of null (reading 'length')
+```
+
+<Callout type="warn" title="つまずきポイント: JSON.parse(null)は、静かに通り抜ける">
+`books`を配列として使おうとした、この行で初めてエラーになります。「まだ何も保存されていないとき」を`if (json === null) return [];`で先に処理しておかないと、エラーの発生する場所が、原因から離れたところにずれてしまいます。コース1で見た「エラーにならずに流れていく」というJavaScriptの性格が、ここでも顔を出しています。
+</Callout>
+
+<Exercise title="演習1: 再読み込みしても消えないことを確かめる">
+
+ローカルサーバーで`index.html`を開き、コンソールに冊数が表示されることを確認したら、ブラウザのタブを一度閉じて、もう一度開き直してください。冊数の表示が変わらないこと(=`localStorage`から読み込めていること)を確認してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+今の`hondana.js`は、開くたびに`shelf`を新しく作って`saveBooks`で上書き保存しています。だから毎回同じ2冊(または、演習で増やしていれば3冊)が保存され直します。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+ブラウザの開発者ツールを開き、Application(またはストレージ)タブから`localStorage`の中身を直接見てみると、`hondana-books`というキーにJSON文字列が入っているのが確認できます。
+</details>
+
+<details>
+<summary>こたえ</summary>
+特別な正解はありません。タブを閉じて開き直しても`localStorage`の中身は残っているので、冊数の表示は変わりません。開発者ツールで`hondana-books`キーの中身がJSON文字列になっていることも、あわせて確認できていれば十分です。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 感想に引用符や改行を混ぜてみる">
+
+`shelf`のどれか1冊の感想に、二重引用符や改行を含む文字列(例: `"すごい\"傑作\"でした\n続編も読みたい"`)を入れてください。JSON化して`JSON.parse`で戻したとき、元の文字列と完全に一致することを確認してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+喫茶Javaのhondanaでは、タブ区切りのテキスト形式だったので、感想の中のタブや改行を手作業でスペースに置き換える必要がありました。JSONではその心配がいらないことを、実際に確かめる演習です。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-02-d"
+  initialCode={`const review = 'すごい"傑作"でした\\n続編も読みたい';
+const json = JSON.stringify({ review });
+const revived = JSON.parse(json);
+console.log(revived.review === review);`}
+/>
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+`true`と表示されれば成功です。`JSON.stringify`は、文字列の中の引用符や改行を自動的にエスケープして(`\"`や`\n`のような形にして)壊れないようにしてくれます。喫茶Javaのタブ区切り形式で必要だった「感想の中のタブを手作業でスペースに置き換える」ような工夫は、JSONでは要りません。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: null チェックを外して、壊れ方を見る">
+
+`storage.js`の`loadBooks`から、`if (json === null) { return []; }`の3行を一時的に削除してください。ブラウザの`localStorage`を開発者ツールから空にしてから`index.html`を開き、何が起きるかコンソールで確認したら、必ず3行を元に戻してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+このレッスンの「つまずきポイント」で見た`JSON.parse(null)`の動きを、実際のhondanaで再現する演習です。`localStorage.getItem`が`null`を返したまま`JSON.parse`に渡ることになります。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+開発者ツールのApplication(ストレージ)タブから、`hondana-books`キーを削除するか、localStorageの中身をすべて消去してから、ページを再読み込みします。
+</details>
+
+<details>
+<summary>こたえ</summary>
+`JSON.parse(localStorage.getItem(STORAGE_KEY))`が`JSON.parse(null)`となり、`loadBooks`は`null`という値を返します。そのあと`hondana.js`の`books.length`を読もうとした行で、`TypeError: Cannot read properties of null (reading 'length')`が発生し、画面に何も表示されなくなります。`if (json === null) return [];`は、「まだ1冊も保存されていない」という、ごく普通の状況にちゃんと備えるためのものだったと分かります。確認できたら、3行を元に戻してください。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `localStorage`は、文字列のキーと値だけを保存できる、ブラウザの保存箱
+- `JSON.stringify`で配列やオブジェクトを文字列にしてから保存し、`JSON.parse`で文字列から戻す
+- 保存はそのブラウザ・そのオリジンだけに閉じている。消えることもある、という限界を知っておく
+- `JSON.parse(null)`はエラーにならず`null`を返す。配列として使おうとした、もっと後の行で初めてエラーになる
+- `loadBooks`・`saveBooks`という名前と役割を変えずに中身だけ差し替えられたのは、モジュールで境界を分けておいた効果
+
+<Quiz
+  client:visible
+  storageKey="koubou-02"
+  questions={[
+    {
+      q: '本の一覧(配列)をlocalStorageに保存する前に、JSON.stringifyを通す理由は?',
+      choices: [
+        '配列の方が文字列より軽くて速いから',
+        'localStorageは文字列しか保存できないため、配列やオブジェクトを文字列に変換する必要があるから',
+        'JSON.stringifyを通さないとブラウザがクラッシュするから',
+      ],
+      answer: 1,
+      explain: 'localStorageに保存できるのは文字列だけなので、配列やオブジェクトはJSON.stringifyで文字列に変換してから保存します。',
+    },
+    {
+      q: 'localStorage.getItem(存在しないキー) は何を返す?',
+      choices: [
+        'undefined',
+        'null',
+        '空文字列 ""',
+      ],
+      answer: 1,
+      explain: '保存されていないキーに対しては null が返ります。JSON.parse(null) はエラーにならずnullを返すので、明示的にnullチェックをしないと、後の行でTypeErrorになります。',
+    },
+    {
+      q: 'localStorageの限界として、本文で述べられていたのは?',
+      choices: [
+        'そのブラウザ・そのオリジンだけに保存され、別のブラウザや端末からは見えない',
+        'すべてのブラウザで自動的に他の端末と同期される',
+        'サーバーが常にオンラインでないと保存できない',
+      ],
+      answer: 0,
+      explain: 'localStorageはあくまでその端末・そのブラウザ・そのオリジンに閉じた保存です。サーバーに預けるのとは違います。',
+    },
+  ]}
+/>

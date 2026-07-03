@@ -1,0 +1,219 @@
+---
+title: 数と計算
+course: hajimete
+order: 6
+description: 四則演算と%・**、Math.floor/roundで数を扱います。JavaScriptには整数専用の割り算がないこと、そして計算がエラーにならずNaNという値になって流れていくことにも出会います。
+seed: "変な計算をしてもJavaScriptは案外止まりません。では、何が起きたかをどう知るのか——エラーと友達になりましょう"
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## コードの「返事」を、もう少し確かめる
+
+ここまで、`console.log`に書いた値がそのまま出力される様子を見てきました。でも、`console.log`の中には、値だけでなく計算式も書けます。JavaScriptがその式をどう「返事」してくるのか、計算を通して確かめていきましょう。
+
+## 四則演算
+
+`+`（足し算）・`-`（引き算）・`*`（掛け算）・`/`（割り算）は、他の言語や電卓と同じ記号です。
+
+<CodeRunner client:visible storageKey="hajimete-06-a" initialCode={`console.log(7 + 2);
+console.log(7 - 2);
+console.log(7 * 2);
+console.log(7 / 2);`} />
+
+ここで、注目してほしいのが最後の`7 / 2`です。結果は`3.5`と表示されます。**JavaScriptには、整数どうしの割り算専用の型や演算子がありません。** 割り切れてもそうでなくても、`/`の結果はいつも`number`型の値として、必要なだけ小数点以下を持って返ってきます。「整数を整数で割ったら整数になる」という感覚を他の言語で持っている人は、ここで一度、期待をリセットしておいてください。
+
+## %と**
+
+割り算の余りを求める`%`（剰余演算子）と、累乗を求める`**`（べき乗演算子）も、よく使います。
+
+<CodeRunner client:visible storageKey="hajimete-06-b" initialCode={`console.log(7 % 2);
+console.log(7 ** 2);`} />
+
+`7 % 2`は「7を2で割った余り」で`1`、`7 ** 2`は「7の2乗」で`49`になります。`%`は、たとえば「3個ずつ袋に詰めたときに何個余るか」のような場面でよく登場します。
+
+## Math.floorとMath.round
+
+小数を整数にしたいときは、`Math`という道具箱に入っているメソッドを使います。
+
+<CodeRunner client:visible storageKey="hajimete-06-c" initialCode={`console.log(Math.floor(7 / 2));
+console.log(Math.round(3.5));
+console.log(Math.round(3.4));`} />
+
+- `Math.floor(...)` — 小数点以下を切り捨てて、その数以下でいちばん大きい整数にします
+- `Math.round(...)` — 四捨五入した整数にします
+
+`Math.floor(7 / 2)`は`3.5`を切り捨てて`3`に、`Math.round(3.5)`は四捨五入で`4`に、`Math.round(3.4)`は`3`になります。「割り算の結果を整数にしたい」という場面では、この2つのどちらかを組み合わせるのが定石です。
+
+## numberの限界——大きすぎる数
+
+前回、`0.1 + 0.2`が`0.3`ぴったりにならないことを見ました。実は、数がとても大きくなったときにも、同じような限界が現れます。
+
+<CodeRunner client:visible storageKey="hajimete-06-d" initialCode={`console.log(9007199254740992);
+console.log(9007199254740992 + 1);`} />
+
+`9007199254740992`に`1`を足しても、結果は`9007199254740992`のまま変わりません。JavaScriptの`number`型が正確に扱える整数には上限があり、それを超えると、こうした「足したのに変わらない」ということが静かに起こります。日常のプログラムでこの上限に触れることはめったにありませんが、「numberにも限界がある」ということだけ、覚えておいてください。
+
+## エラーにならずに、NaNが流れてくる
+
+ここまでの計算は、すべて意味の通る数どうしの計算でした。では、数値ではないものを掛け算しようとしたら、どうなるでしょうか。
+
+<CodeRunner client:visible storageKey="hajimete-06-e" initialCode={`console.log("abc" * 2);
+console.log(typeof NaN);`} />
+
+`"abc" * 2`は、エラーにはなりません。代わりに、`NaN`という特別な値が出力されます。**NaN**は「Not a Number」の略で、「計算しようとしたが、意味のある数にならなかった」ことを表す値です。不思議なことに、`typeof NaN`は`number`です。「数ではない」という意味の値なのに、型としては`number`に分類される——これはJavaScriptの中でも特に有名なクセの1つです。
+
+<Callout type="warn" title="つまずきポイント：JavaScriptは、止まって教えてくれるとは限らない">
+`"abc" * 2`のような、明らかにおかしな計算をしても、JavaScriptはエラーで止まりません。`NaN`という値を返して、何ごともなかったかのように次の行へ進みます。これは、このコースを通してずっと意識してほしいJavaScriptの性格です。**エラーで止まって教えてくれる場合もあれば、`NaN`や`undefined`のような値を返して静かに流れていく場合もあります。** 次のレッスンでは、この両方の顔にしっかり向き合います。
+</Callout>
+
+`NaN`が紛れ込んでいないかを調べたいときは、`Number.isNaN(...)`が使えます。
+
+<CodeRunner client:visible storageKey="hajimete-06-f" initialCode={`const kekka = "abc" * 2;
+console.log(Number.isNaN(kekka));`} />
+
+`Number.isNaN(kekka)`は、`kekka`が`NaN`かどうかを`true`か`false`で教えてくれます。
+
+<Exercise title="演習1: 四則演算の結果を確かめる">
+
+好きな2つの整数を使って、`+`・`-`・`*`・`/`の4つの計算結果を、それぞれ`console.log`で出力してください。
+
+<CodeRunner client:visible storageKey="hajimete-06-g" initialCode={`// 好きな2つの数で、+ - * / の4つの計算をしてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスン冒頭の`7`と`2`の例と同じ形です。数字だけあなたの好きなものに変えてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log(a + b);`のように、4つの演算子それぞれで1行ずつ書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+console.log(13 + 4);
+console.log(13 - 4);
+console.log(13 * 4);
+console.log(13 / 4);
+```
+
+`17`・`9`・`52`・`3.25`が出力されれば成功です。割り切れなくても、小数のまま結果が返ってきていることを確認してください。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 切り捨てと四捨五入を試す">
+
+演習1で使った割り算の結果を、`Math.floor`と`Math.round`のそれぞれで整数にしてみてください。
+
+<CodeRunner client:visible storageKey="hajimete-06-h" initialCode={`// 割り算の結果を Math.floor と Math.round でそれぞれ整数にしてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`Math.floor(7 / 2)`の例と同じ形です。丸かっこの中に割り算の式をそのまま書けます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log(Math.floor(a / b));`と`console.log(Math.round(a / b));`を並べて書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+console.log(Math.floor(13 / 4));
+console.log(Math.round(13 / 4));
+```
+
+`13 / 4`は`3.25`なので、`Math.floor`も`Math.round`も、どちらも`3`になります。`Math.round(3.5)`のように、ちょうど真ん中の小数で試すと、四捨五入と切り捨ての違いがもっとはっきり見えます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: わざとNaNを発生させる">
+
+文字列と数値を`*`で掛け算して、わざと`NaN`を発生させてください。そのあと、`Number.isNaN(...)`でその結果を確認してください。
+
+<CodeRunner client:visible storageKey="hajimete-06-i" initialCode={`// 文字列 * 数値 で NaN を発生させ、Number.isNaN で確認してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`"abc" * 2`の例と同じ形です。文字列の中身はあなたの好きなものにしてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`const kekka = "文字列" * 数値;`のあと、`console.log(kekka);`と`console.log(Number.isNaN(kekka));`を書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const kekka = "たこ焼き" * 3;
+console.log(kekka);
+console.log(Number.isNaN(kekka));
+```
+
+`NaN`と`true`が出力されれば成功です。JavaScriptはエラーで止まらずに、`NaN`という値でこの計算を「静かに流した」ことになります。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `/`はいつも`number`型を返す。JavaScriptには整数専用の割り算がない
+- `%`は余り、`**`は累乗。`Math.floor`は切り捨て、`Math.round`は四捨五入
+- `number`にも、正確に扱える整数の大きさに限界がある
+- 意味の通らない計算は、エラーではなく`NaN`という値になって流れていく。`Number.isNaN(...)`で確認できる
+
+<Quiz
+  client:visible
+  storageKey="hajimete-06"
+  questions={[
+    {
+      q: '`7 / 2`の結果として正しいのはどれ？',
+      choices: ['3（整数の割り算になる）', '3.5', 'エラーになる'],
+      answer: 1,
+      explain: 'JavaScriptには整数専用の割り算がなく、/ の結果はいつも number 型の値として小数点以下も含めて返ります。',
+    },
+    {
+      q: '`"abc" * 2`を実行するとどうなる？',
+      choices: ['エラーで止まる', 'NaNという値が返り、次の行へ進む', '自動的に0として扱われる'],
+      answer: 1,
+      explain: '意味の通らない計算はエラーにはならず、NaNという値になって静かに流れていきます。',
+    },
+    {
+      q: '`typeof NaN`の結果は？',
+      choices: ['"NaN"', '"number"', '"undefined"'],
+      answer: 1,
+      explain: 'NaNは「数ではない」ことを表す値ですが、型としてはnumberに分類されます。',
+    },
+  ]}
+/>

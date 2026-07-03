@@ -1,0 +1,354 @@
+---
+title: 例外——止まって教えてもらう
+course: sekkei
+order: 7
+description: try/catch/finallyでエラーを受け止め、throw new Errorで自分から止める方法を学びます。JSは止まらずに流れることも多いからこそ、自分でthrowする価値があります。
+seed: try/catchとthrowで、エラーを自分の手で扱えるようになりました。ここまでのコース4で学んだこと——関数、アロー関数、コールバック、map/filter/find、class、JSON——を全部使って、小さな図書館を作ってみましょう。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## エラーで、プログラムを止めたくないとき
+
+前回、壊れたJSON文字列を`JSON.parse`に渡すと、`SyntaxError`が発生してプログラムが止まりました。でも、いつもそこで止まってほしいわけではありません。「壊れたデータが来ることもある」と分かっているなら、そのエラーを受け止めて、プログラム自体は続けたい場面もあります。
+
+そのための書き方が**try/catch**です。
+
+## try/catchで、エラーを受け止める
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-a"
+  initialCode={`const broken = '{name: "ラムネ", price: 200}';
+
+try {
+  const data = JSON.parse(broken);
+  console.log(data);
+} catch (error) {
+  console.log("読み込みに失敗しました:", error.message);
+}
+
+console.log("ここまで実行が続く");`}
+/>
+
+`try { ... }`の中で実行してみて、エラーが起きたら`catch (error) { ... }`にその場で移ります。`error`には、起きたエラーを表す**エラーオブジェクト**が渡り、`error.message`でエラーメッセージの文字列だけを取り出せます。ポイントは、`catch`のブロックを抜けたあと、プログラムがそのまま続くことです。`console.log("ここまで実行が続く")`が、ちゃんと実行されています。`try`で囲まなければ、レッスン6で見たとおり、ここでプログラムは止まっていました。
+
+## finally——うまくいっても失敗しても、必ず実行する
+
+`try`・`catch`に続けて、`finally`というブロックを追加できます。成功しても失敗しても、必ず実行される後片付け用のブロックです。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-b"
+  initialCode={`function loadData(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.log("エラー:", error.message);
+    return null;
+  } finally {
+    console.log("読み込み処理を終了します");
+  }
+}
+
+console.log(loadData('{"name": "ラムネ"}'));
+console.log(loadData('{name: "ラムネ"}'));`}
+/>
+
+1回目の`loadData`はエラーなしで成功しますが、それでも`読み込み処理を終了します`が表示されています。2回目は`catch`でエラーを受け止めたあとにも、同じく`読み込み処理を終了します`が表示されます。`finally`は「成功したから」「失敗したから」に関係なく、**必ず**実行されます。しかも、`try`や`catch`の中に`return`があっても、関数が実際に呼び出し元へ値を返すより前に、`finally`が実行されます。ファイルを閉じる、接続を切るなど、「後片付けは必ずやりたい」処理に向いています。
+
+## throw——自分からエラーを起こす
+
+ここまでは、JavaScriptが自動的に起こすエラーを受け止めるだけでした。でも、自分の書いたコードの中で「これは明らかにおかしい」と分かった場面では、自分からエラーを起こすこともできます。それが`throw`です。
+
+レッスン5の`Yatai`クラスの`sell`メソッドに、チェックを追加してみます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-c"
+  initialCode={`class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    if (count <= 0) {
+      throw new Error("個数は1以上にしてください");
+    }
+    if (count > this.stock) {
+      throw new Error("在庫が足りません");
+    }
+    this.stock -= count;
+    return this.price * count;
+  }
+}
+
+const ramune = new Yatai("ラムネ", 200, 3);
+
+try {
+  console.log(ramune.sell(5));
+} catch (error) {
+  console.log("販売できませんでした:", error.message);
+}
+
+console.log("在庫:", ramune.stock);`}
+/>
+
+`throw new Error("メッセージ")`は、「ここでエラーを発生させる」という文です。`sell`の中で在庫より多い数を売ろうとしたので、`throw`が実行され、その場で`sell`の実行が止まり、呼び出し元の`catch`まで一気に飛びます。最後の`在庫: 3`が示すとおり、在庫は減っていません——チェックのおかげで、おかしな状態になる前に止まりました。
+
+<Callout type="warn" title="つまずきポイント：throwを、catchせずに実行すると">
+`throw`されたエラーを、どの`try/catch`も受け止めなければ、レッスン1・3・5で見た自動発生のエラーと同じように、プログラムはそこで止まります。
+
+```js expect-error
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    if (count <= 0) {
+      throw new Error("個数は1以上にしてください");
+    }
+    this.stock -= count;
+    return this.price * count;
+  }
+}
+
+const ramune = new Yatai("ラムネ", 200, 10);
+console.log(ramune.sell(0));
+```
+
+実行すると、次のようなエラーになります（実際にはこの下に、どのメソッドの何行目で起きたかを示すスタックトレースも表示されますが、ここではエラーの種類とメッセージだけ示します）。
+
+```console
+Error: 個数は1以上にしてください
+```
+
+`throw`は「わざとエラーを起こす」だけで、それ自体は`catch`されなければ止まります。**止めたいときはそのまま`throw`だけ、続けたいときは呼び出す側で`try/catch`を用意する**——この2つはセットで使います。
+</Callout>
+
+## なぜ、自分からthrowするのか
+
+コース2で、JavaScriptは「止まって教えてくれるとは限らない」言語だと学びました。`"abc" * 2`は`NaN`に、存在しない配列の添字は`undefined`になり、エラーにはなりません。**JSは、放っておくと、おかしな値のまま静かに流れ続けることが多い言語です。**
+
+だからこそ、自分のコードにとって「これ以上進んだらおかしくなる」という条件が分かっているなら、`throw`で明示的に止める価値があります。`sell`に負の個数を渡しても、`throw`がなければ在庫がマイナスになったまま、何事もなく計算が進んでしまいます。`throw`は、静かに流れていくはずだった間違いを、その場で立ち止まらせるための道具です。
+
+<Exercise title="演習1: 本のJSONを、try/catchで読み込む">
+
+`'{"title": "三体", "author": "劉慈欣"}'`（正しいJSON）と`'{title: "三体", author: "劉慈欣"}'`（壊れたJSON）を、それぞれ`try/catch`で`JSON.parse`してください。成功したら中身を、失敗したら`読み込み失敗:`に続けて`error.message`を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-ex1"
+  initialCode={`// ここでtry/catchを試してみましょう
+const validBook = '{"title": "三体", "author": "劉慈欣"}';
+const brokenBook = '{title: "三体", author: "劉慈欣"}';
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`broken`の例と同じ形を、2回使います。それぞれ別々の`try/catch`で囲みます。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+try {
+  console.log(JSON.parse(validBook));
+} catch (error) {
+  console.log("読み込み失敗:", error.message);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const validBook = '{"title": "三体", "author": "劉慈欣"}';
+const brokenBook = '{title: "三体", author: "劉慈欣"}';
+
+try {
+  console.log(JSON.parse(validBook));
+} catch (error) {
+  console.log("読み込み失敗:", error.message);
+}
+
+try {
+  console.log(JSON.parse(brokenBook));
+} catch (error) {
+  console.log("読み込み失敗:", error.message);
+}
+```
+
+`validBook`は問題なくオブジェクトになり、`brokenBook`はキーにダブルクォートがないため`catch`に落ちます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: finallyつきのsafeParseを作る">
+
+`safeParse(text)`という関数を作ってください。`try`で`JSON.parse(text)`を返し、`catch`ではエラーメッセージを`パース失敗:`に続けて表示して`null`を返し、`finally`では成功・失敗にかかわらず`チェック終了`と表示してください。`'{"title": "三体"}'`と`'{title: "三体"}'`の両方で試してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-ex2"
+  initialCode={`// ここでsafeParseを試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`loadData`とほぼ同じ形です。`try`の中で`return JSON.parse(text);`、`catch`でメッセージ表示と`return null;`、`finally`で`チェック終了`を表示します。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function safeParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    ...
+  } finally {
+    console.log("チェック終了");
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function safeParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.log("パース失敗:", error.message);
+    return null;
+  } finally {
+    console.log("チェック終了");
+  }
+}
+
+console.log(safeParse('{"title": "三体"}'));
+console.log(safeParse('{title: "三体"}'));
+```
+
+どちらの呼び出しでも、`return`より前に`チェック終了`が表示されます。`finally`は、関数がどのように終わろうとしていても、必ず先に実行されます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 0で割ろうとしたら、自分からthrowする">
+
+`divide(a, b)`という関数を作ってください。`b`が`0`のときは`throw new Error("0で割ることはできません");`し、それ以外では`a / b`を返してください。`divide(10, 2)`と`divide(10, 0)`を1つの`try`の中で順に呼び出し、`catch`で受け止めて`計算できませんでした:`に続けてメッセージを表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-07-ex3"
+  initialCode={`// ここでdivideとtry/catchを試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`sell`に書いた`if (条件) { throw new Error("..."); }`と同じ形です。`b === 0`のときだけ`throw`し、それ以外は普通に割り算の結果を`return`します。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function divide(a, b) {
+  if (b === 0) {
+    throw new Error("0で割ることはできません");
+  }
+  return a / b;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function divide(a, b) {
+  if (b === 0) {
+    throw new Error("0で割ることはできません");
+  }
+  return a / b;
+}
+
+try {
+  console.log(divide(10, 2));
+  console.log(divide(10, 0));
+} catch (error) {
+  console.log("計算できませんでした:", error.message);
+}
+```
+
+`divide(10, 2)`の`5`は表示されますが、`divide(10, 0)`で`throw`が起き、その時点で`try`の残りは実行されずに`catch`へ移ります。JavaScript自体は`10 / 0`を`Infinity`として計算してしまい、エラーにはしません。0除算を止めたいなら、このように自分でチェックしてthrowする必要があります。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `try { ... } catch (error) { ... }`で、エラーを受け止めてプログラムを止めずに続けられる
+- `error.message`で、エラーメッセージの文字列を取り出せる
+- `finally { ... }`は、成功・失敗にかかわらず必ず実行される後片付け用のブロック
+- `throw new Error("メッセージ")`で、自分からエラーを起こせる。`catch`されなければ、そこでプログラムは止まる
+- JavaScriptは、`NaN`や`undefined`のように、おかしな値のまま静かに流れ続けることが多い言語。だからこそ、「これ以上進んだらおかしい」という条件には、自分から`throw`して止める価値がある
+
+<Quiz
+  client:visible
+  storageKey="sekkei-07"
+  questions={[
+    {
+      q: 'try/catchの説明として正しいのは？',
+      choices: [
+        'tryの中でエラーが起きると、catchに移り、そのあともプログラムは続けられる',
+        'tryの中でエラーが起きると、プログラム全体が即座に終了する',
+        'catchはエラーが起きなかったときだけ実行される',
+      ],
+      answer: 0,
+      explain: 'tryの中でエラーが起きるとcatchに処理が移り、catchのブロックを抜けたあとはプログラムがそのまま続きます。',
+    },
+    {
+      q: 'finallyブロックが実行されるタイミングは？',
+      choices: [
+        'エラーが起きたときだけ',
+        'エラーが起きなかったときだけ',
+        '成功・失敗にかかわらず、必ず実行される',
+      ],
+      answer: 2,
+      explain: 'finallyは、tryの処理が成功しても失敗しても、必ず実行されます。',
+    },
+    {
+      q: '`throw new Error("メッセージ")`されたエラーを、どのtry/catchも受け止めなかった場合は？',
+      choices: [
+        '何も起きず、そのまま次の行が実行される',
+        'そのメッセージとともに、プログラムがそこで止まる',
+        '自動的にNaNが返り、実行が続く',
+      ],
+      answer: 1,
+      explain: 'throwされたエラーがcatchされなければ、自動発生のエラーと同じように、そこでプログラムが止まります。',
+    },
+  ]}
+/>

@@ -1,0 +1,38 @@
+---
+import { getCollection, render } from 'astro:content';
+import YataiLayout from '../../layouts/YataiLayout.astro';
+import { withBase } from '../../utils/url';
+
+export async function getStaticPaths() {
+  const yatai = await getCollection('yatai');
+  return yatai.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const all = (await getCollection('yatai')).sort((a, b) => a.data.order - b.data.order);
+const idx = all.findIndex((m) => m.id === entry.id);
+const prev = idx > 0 ? { slug: all[idx - 1]!.id, title: all[idx - 1]!.data.title } : undefined;
+const next =
+  idx >= 0 && idx < all.length - 1
+    ? { slug: all[idx + 1]!.id, title: all[idx + 1]!.data.title }
+    : undefined;
+
+const lessons = await getCollection('lessons');
+const relatedLessons = (entry.data.relatedLessons ?? []).flatMap((ref) => {
+  const lesson = lessons.find((l) => l.id === ref);
+  if (!lesson) return [];
+  const [course, slug] = lesson.id.split('/');
+  return [
+    {
+      href: withBase(`/courses/${course}/${slug}/`),
+      label: `コース「${lesson.data.title}」`,
+    },
+  ];
+});
+---
+
+<YataiLayout title={entry.data.title} description={entry.data.description} prev={prev} next={next} relatedLessons={relatedLessons}>
+  <Content />
+</YataiLayout>

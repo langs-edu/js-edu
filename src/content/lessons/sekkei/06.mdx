@@ -1,0 +1,283 @@
+---
+title: JSON——データを文字にして運ぶ
+course: sekkei
+order: 6
+description: JSON.stringifyとJSON.parseで、オブジェクトと文字列を行き来します。JSONとJSオブジェクトの違い、classのインスタンスを変換したときに何が残り何が消えるかを確認します。
+seed: JSON.parseに壊れた文字列を渡すと、SyntaxErrorで止まりました。エラーで止まること自体は、悪いことではありません。次は、そのエラーを自分で受け止めたり、自分から起こしたりする方法——例外です。
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## オブジェクトのままでは、運べない
+
+ここまでのオブジェクトや`class`のインスタンスは、プログラムが動いている間、メモリの中に存在しています。でも、それをファイルに保存したり、別のプログラムに送ったりしたいときは、オブジェクトのままではいけません。保存も通信も、扱えるのは**文字列**（や、それに近いバイト列）だけだからです。
+
+「JavaScriptのオブジェクトを、文字列に変換する共通のルール」——それが**JSON**（JavaScript Object Notation）です。
+
+## JSON.stringifyとJSON.parse
+
+オブジェクトを文字列にするのが`JSON.stringify`、文字列をオブジェクトに戻すのが`JSON.parse`です。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-a"
+  initialCode={`const yatai = { name: "りんご飴", price: 300 };
+
+const json = JSON.stringify(yatai);
+console.log(json);
+console.log(typeof json);
+
+const restored = JSON.parse(json);
+console.log(restored);
+console.log(restored.name);`}
+/>
+
+`JSON.stringify(yatai)`は、オブジェクト`yatai`を、`'{"name":"りんご飴","price":300}'`という**文字列**に変換します。`typeof json`が`"string"`であることからも、これがもうオブジェクトではなく、ただの文字列だと分かります。`JSON.parse(json)`は、その逆——文字列を読み取って、もとと同じ形のオブジェクトを作ります。
+
+<Callout type="note" title="restoredは、yataiとは別の新しいオブジェクト">
+`JSON.parse`が作る`restored`は、`yatai`と見た目は同じでも、まったく別の新しいオブジェクトです（`restored === yatai`は`false`になります）。`JSON.stringify`と`JSON.parse`の組は、オブジェクトそのものを運ぶのではなく、オブジェクトの中身を文字列に写し取り、その文字列から同じ中身のオブジェクトを新しく組み立て直しています。
+</Callout>
+
+## 見やすく整形する
+
+`JSON.stringify`の第2引数と第3引数を使うと、見やすく整形できます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-b"
+  initialCode={`const yatai = { name: "りんご飴", price: 300, stock: 5 };
+console.log(JSON.stringify(yatai, null, 2));`}
+/>
+
+第2引数の`null`は「すべてのプロパティをそのまま含める」という意味、第3引数の`2`は「1段のインデントに半角スペース2つ使う」という意味です。設定ファイルやログとして人間が読むときは、この整形つきの形がよく使われます。
+
+## JSONは、JSのオブジェクトそのものではない
+
+JSONという名前は「JavaScript Object Notation」の略ですが、JSONはJavaScriptのオブジェクトリテラルと**まったく同じ**ではありません。いくつか、はっきりした違いがあります。
+
+- キーは、必ず**ダブルクォートで囲んだ文字列**でなければならない（JSのオブジェクトリテラルでは省略できる）
+- 値になれるのは、文字列・数値・真偽値・`null`・配列・オブジェクトだけ。**関数は値にできない**
+- `undefined`もJSONの値にはなれない
+- 最後の要素のあとにカンマ（トレイリングカンマ）を置けない
+- コメントを書けない
+
+<Callout type="warn" title="つまずきポイント：JSっぽく書いた文字列は、JSONとして読めない">
+JSのオブジェクトリテラルの見た目のまま、キーにクォートをつけずに書いた文字列を`JSON.parse`に渡すと、エラーになります。
+
+```js expect-error
+const broken = '{name: "りんご飴", price: 300}';
+console.log(JSON.parse(broken));
+```
+
+```console
+SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+```
+
+JSONの世界では、キーの`"name"`のダブルクォートは省略できません。「JSのオブジェクトリテラルとして正しい」ことと、「JSONとして正しい」ことは、別の基準です。
+</Callout>
+
+## classのインスタンスをJSONにすると、何が残る？
+
+レッスン5で作った`Yatai`クラスのインスタンスを、`JSON.stringify`にかけてみます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-c"
+  initialCode={`class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  describe() {
+    return \`\${this.name}（\${this.price}円、残り\${this.stock}個）\`;
+  }
+}
+
+const appleCandy = new Yatai("りんご飴", 300, 5);
+const json = JSON.stringify(appleCandy);
+console.log(json);
+
+const restored = JSON.parse(json);
+console.log(restored);
+console.log(restored instanceof Yatai);
+console.log(typeof restored.describe);`}
+/>
+
+`JSON.stringify(appleCandy)`の結果には、`name`・`price`・`stock`は含まれていますが、`describe`メソッドは含まれていません。**JSONに残るのは、インスタンス自身が持つデータ（プロパティ）だけで、メソッドは含まれません。** さらに、`JSON.parse`で戻ってきた`restored`は、`Yatai`のインスタンスではなく、**ただのオブジェクト**です（`restored instanceof Yatai`は`false`、`restored.describe`は`undefined`）。「同じ形に見えるデータ」に戻るだけで、「同じクラスのインスタンス」には戻らない——これは覚えておく価値のある、誠実な事実です。
+
+<Callout type="yorimichi" title="なぜJSONが大事なのか">
+JSONが便利なのは、JavaScriptだけの都合ではありません。Python・Java・Rustなど、ほとんどのプログラミング言語がJSONを読み書きできます。設定ファイル、Webのやり取り、アプリ同士のデータの受け渡し——JSONは、言語をまたいだ「共通語」として、いまや当たり前のように使われています。詳しい歴史は、[🏮 屋台のこぼれ話「JSONの発明」](../../../yatai/11-json/)で。
+</Callout>
+
+<Exercise title="演習1: stringifyしてparseし、別物であることを確かめる">
+
+`{ name: "ラムネ", price: 200 }`というオブジェクトを`original`という名前で作り、`JSON.stringify`と`JSON.parse`を通して`copy`という名前の新しいオブジェクトを作ってください。`copy`の中身を表示したうえで、`copy === original`と`copy.name === original.name`をそれぞれ表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-ex1"
+  initialCode={`// ここでstringify・parseを試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`JSON.stringify(original)`で文字列を作り、その文字列を`JSON.parse`に渡すと、新しいオブジェクトができます。`===`は値そのものが同じ参照かどうかを比べる演算子でした（コース3）。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const json = JSON.stringify(original);
+const copy = JSON.parse(json);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const original = { name: "ラムネ", price: 200 };
+const json = JSON.stringify(original);
+const copy = JSON.parse(json);
+
+console.log(copy);
+console.log(copy === original);
+console.log(copy.name === original.name);
+```
+
+`copy === original`は`false`（別のオブジェクト）ですが、`copy.name === original.name`は`true`（中身は同じ）になります。「中身は同じでも、別物」——これがJSONを介したコピーの性質です。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 配列を整形して表示する">
+
+`[300, 500, 200]`という配列を、`JSON.stringify`の第2・第3引数を使って、インデント`2`つきで見やすく表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-ex2"
+  initialCode={`// ここで配列の整形を試してみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`yatai`と同じ形です。オブジェクトの代わりに配列を`JSON.stringify`の第1引数に渡すだけです。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+console.log(JSON.stringify(prices, null, 2));
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const prices = [300, 500, 200];
+console.log(JSON.stringify(prices, null, 2));
+```
+
+配列も、オブジェクトと同じように整形できます。それぞれの要素が、1行ずつインデントされて並びます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 壊れたJSON文字列を、正しい形に直す">
+
+次の文字列は、キーにダブルクォートがないため、`JSON.parse`が`SyntaxError`になります。正しいJSONの文字列に書き直し、`JSON.parse`が成功することを確かめてください。
+
+```js nocheck
+const broken = '{name: "ラムネ", price: 200}';
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-06-ex3"
+  initialCode={`// このJSON文字列を直してみましょう
+const broken = '{name: "ラムネ", price: 200}';
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+JSONでは、キーは必ずダブルクォートで囲んだ文字列でなければなりません。`name`を`"name"`に直します。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const fixed = '{"name": "ラムネ", "price": 200}';
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+const fixed = '{"name": "ラムネ", "price": 200}';
+console.log(JSON.parse(fixed));
+```
+
+`name`を`"name"`に直すだけで、`JSON.parse`が`{ name: 'ラムネ', price: 200 }`というオブジェクトを問題なく作れるようになります。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `JSON.stringify(値)`は、オブジェクトや配列を文字列に変換する。`JSON.parse(文字列)`は、その逆
+- `JSON.stringify(値, null, 数)`で、見やすく整形した文字列を作れる
+- JSONは、キーに必ずダブルクォートが必要など、JSのオブジェクトリテラルより厳密なルールを持つ。関数や`undefined`は値にできない
+- `class`のインスタンスを`JSON.stringify`すると、プロパティは残るがメソッドは含まれない
+- `JSON.parse`で戻ってくるのは、もとのクラスのインスタンスではなく、ただのオブジェクト
+- JSONは、言語をまたいだデータの共通語として、保存や通信で広く使われている
+
+<Quiz
+  client:visible
+  storageKey="sekkei-06"
+  questions={[
+    {
+      q: '`JSON.stringify({ a: 1 })` の戻り値の型は？',
+      choices: ['object', 'string', 'array'],
+      answer: 1,
+      explain: 'JSON.stringifyはオブジェクトを文字列に変換します。戻り値は常にstring型です。',
+    },
+    {
+      q: 'クラスのインスタンスをJSON.stringifyすると、何が失われる？',
+      choices: [
+        'プロパティ（データ）が失われる',
+        'メソッドが失われる（プロパティだけが文字列に残る）',
+        '何も失われない。メソッドも含めて完全に復元できる',
+      ],
+      answer: 1,
+      explain: 'JSON.stringifyはインスタンス自身のプロパティだけを文字列にします。メソッドは含まれず、JSON.parseで戻ってくるのもただのオブジェクトです。',
+    },
+    {
+      q: '`\'{name: "ラムネ"}\'` を `JSON.parse` に渡すとどうなる？',
+      choices: [
+        '`{ name: "ラムネ" }` というオブジェクトになる',
+        'キーがダブルクォートで囲まれていないため、SyntaxErrorになる',
+        '`undefined`が返る',
+      ],
+      answer: 1,
+      explain: 'JSONでは、キーは必ずダブルクォートで囲んだ文字列である必要があります。それ以外の形はSyntaxErrorになります。',
+    },
+  ]}
+/>

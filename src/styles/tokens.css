@@ -1,0 +1,109 @@
+/* ============================================================
+   JavaScript縁日 — デザイントークン
+   昼の縁日（light）と夜の縁日（dark、本命）。紙と墨と祭り紺と提灯。
+   ============================================================ */
+
+:root {
+  /* 書体 */
+  --font-display: 'Zen Old Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-body:
+    'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans CJK JP', 'Yu Gothic UI', Meiryo,
+    sans-serif;
+  --font-code:
+    'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Hiragino Kaku Gothic ProN',
+    monospace;
+
+  /* 字間・行間 */
+  --tracking-wide: 0.12em;
+  --tracking-display: 0.06em;
+  --leading-prose: 2;
+  --leading-tight: 1.4;
+
+  /* 寸法 */
+  --measure: 42rem; /* 本文の最大幅 ~68ch相当 */
+  --measure-wide: 64rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  /* 余白スケール */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.5rem;
+  --space-6: 4rem;
+  --space-7: 6rem;
+
+  /* 動き */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur-slow: 600ms;
+}
+
+/* ---------- 昼の縁日 ---------- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --c-paper: #f8f4ea; /* さらしの白 */
+  --c-paper-2: #f1ebdc; /* 一段沈んだ紙 */
+  --c-paper-3: #ebe3cf; /* カード縁の砂色 */
+  --c-ink: #2a2624; /* 墨 */
+  --c-ink-2: #57514a; /* 薄墨 */
+  --c-ink-3: #6b655c; /* さらに薄く（紙の上で4.5:1を保つ） */
+
+  --c-kon: #33518e; /* 祭り紺 — 主調 */
+  --c-kon-2: #5270a8;
+  --c-kon-soft: #dfe4f0; /* 紺のうすい背景 */
+  --c-aka: #ae4128; /* 提灯朱 — 行動の色（4.5:1確保のため #c74a2e から調整） */
+  --c-aka-soft: #f4ded6;
+  --c-mizu: #3b6e8f; /* 湯気ごしの水 — リンク・情報 */
+
+  --c-line: #ded5c0; /* 罫線 */
+  --c-line-strong: #c9bfa5;
+
+  /* 提灯朱の上に置く文字色（背景としてのc-akaは明るいため、白系より濃い紙色の方が読みやすい場面がある） */
+  --c-on-aka: #fdf9f0;
+
+  --c-editor-bg: #fdfbf3;
+  --c-editor-gutter: #f2ecdd;
+  --c-output-bg: #2a2624;
+  --c-output-text: #ede8da;
+
+  --shadow-card: 0 1px 2px rgb(42 38 36 / 0.05), 0 4px 16px rgb(42 38 36 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(42 38 36 / 0.08), 0 12px 32px rgb(42 38 36 / 0.1);
+}
+
+/* ---------- 夜の縁日（本命） ---------- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-paper: #14161e; /* 夜空紺 */
+  --c-paper-2: #1a1d27;
+  --c-paper-3: #202430;
+  --c-ink: #e8e3d6; /* 提灯の下の紙 */
+  --c-ink-2: #b0aa9c;
+  --c-ink-3: #918b7e;
+
+  --c-kon: #92a9dd; /* 夜の祭り紺 */
+  --c-kon-2: #6f88bd;
+  --c-kon-soft: #1f2637;
+  --c-aka: #e78a63; /* 提灯の灯 */
+  --c-aka-soft: #3a2a20;
+  --c-mizu: #85b3d6;
+
+  --c-line: #2b2f3c;
+  --c-line-strong: #3e4453;
+
+  /* 提灯の灯は明るい色なので、その上の文字は夜空紺（濃色）にする */
+  --c-on-aka: #14161e;
+
+  --c-editor-bg: #0e1018;
+  --c-editor-gutter: #171a23;
+  --c-output-bg: #0a0b11;
+  --c-output-text: #dcd7c8;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.3);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.45);
+}

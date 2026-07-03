@@ -1,0 +1,399 @@
+---
+title: もしも、の文（if）
+course: nagare
+order: 1
+description: "比較演算子で真偽値を作り、if/else if/elseで処理を分けます。{}が作るブロックの範囲と、インデントとの違いという、JSならではの注意点にも出会います。"
+seed: 比較はできるようになりました。でも、さっき使った===、実はもうひとつ似た書き方があります。真偽値のもうひとつの顔——truthy/falsyとあわせて、次のレッスンで正面から見ていきましょう。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## プログラムに、判断を教える
+
+前のコースの最後で、こんな予告をしていました。「道具がそろいました。次のコースでは、プログラムに『判断』を教えます」。ここから、その始まりです。
+
+ここまで書いてきたプログラムは、上から下へ、書いた文を全部そのまま実行するだけでした。でも実際のプログラムは、状況によって振る舞いを変えたくなります。「お客さんが多ければ、呼び込みの声を大きくする。在庫がなければ、売り切れと伝える」——こんな分かれ道を書くための文が、今日から学ぶ`if`です。
+
+## 比較して、真偽値を作る
+
+`if`が判断の材料にするのは、`true`か`false`のどちらかです。コース1で出会った`boolean`型を覚えていますか。分かれ道を書く前に、`true`と`false`をどうやって手に入れるかを見ておきましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-a"
+  initialCode={`const ondo = 32;
+console.log(ondo === 32);
+console.log(ondo !== 32);
+console.log(ondo > 30);
+console.log(ondo < 30);
+console.log(ondo >= 32);
+console.log(ondo <= 31);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+true
+false
+true
+false
+true
+false
+```
+
+| 演算子 | 意味 |
+|---|---|
+| `===` | 等しい |
+| `!==` | 等しくない |
+| `<` | より小さい |
+| `>` | より大きい |
+| `<=` | 以下 |
+| `>=` | 以上 |
+
+`===`は「等しいか」を調べる演算子です。`=`（1つ）が代入だったのに対し、`===`は比較——見た目も意味も違いますが、最初は混同しやすいので注意してください。比較の結果は、いつも`boolean`型の値、`true`か`false`のどちらか一方です。
+
+## if文——条件がtrueなら実行する
+
+比較の結果を使って、実際に分かれ道を書いてみます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-b"
+  initialCode={`const kyakusuu = 120;
+
+if (kyakusuu > 100) {
+  console.log("たくさんのお客さんです");
+}
+
+console.log("今日の売上をまとめます");`}
+/>
+
+```console
+たくさんのお客さんです
+今日の売上をまとめます
+```
+
+`if (条件) { ... }`の`{ }`の中だけが、「条件が`true`のときに実行される」範囲です。試しに`kyakusuu`を`60`に書き換えて実行してみてください。条件が`false`になるので、`{ }`の中身は実行されず、次のように`今日の売上をまとめます`だけが表示されるはずです。
+
+```console
+今日の売上をまとめます
+```
+
+## {}が作るブロックの範囲
+
+JavaScriptでは、`if`が実行する範囲を決めているのは**インデント（字下げ）ではなく、`{ }`そのもの**です。インデントはあくまで人間が読みやすくするための習慣であって、書かなくても動いてしまいます。これは、字下げそのものが文法になっている言語とは違う、JSならではの性格です。
+
+だからこそ、`{ }`を省略すると、見た目とは違う動きをする事故が起きます。
+
+```js title="MisleadingIndent.js"
+const kyakusuu = 60;
+
+if (kyakusuu > 100)
+  console.log("たくさんのお客さんです");
+  console.log("列の整理をお願いします");
+```
+
+```console
+列の整理をお願いします
+```
+
+見た目では、2行とも`if`の中に字下げされていて、両方とも「お客さんが多いときだけ」実行されそうに見えます。でも`{ }`がないので、`if`の対象になるのは**次の1文だけ**——`console.log("たくさんのお客さんです");`だけです。`kyakusuu`が`60`で条件が`false`でも、2行目の`console.log("列の整理をお願いします")`は`if`とは無関係な、いつも実行される文として動いてしまいます。
+
+<Callout type="warn" title="つまずきポイント：{}を省略した1文ルール">
+`if (条件)`のあとに`{ }`がないとき、`if`が制御するのは直後の1文だけです。2文以上を条件つきにしたいときは、必ず`{ }`で囲んでください。**このサイトでは、`if`には常に`{ }`をつけて書きます。** 1文だけでも省略しない——事故を防ぐいちばん簡単な習慣です。
+</Callout>
+
+## else——それ以外なら
+
+`if`が`false`だったときの行き先も書けます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-c"
+  initialCode={`const zaiko = 0;
+
+if (zaiko > 0) {
+  console.log("りんご飴、まだあります");
+} else {
+  console.log("りんご飴は売り切れです");
+}`}
+/>
+
+```console
+りんご飴は売り切れです
+```
+
+`zaiko`が`0`なので`zaiko > 0`は`false`、`else`の`{ }`が実行されました。`if`と`else`、どちらか一方だけが必ず実行されます。
+
+## else if——複数の分かれ道
+
+3つ以上に分けたいときは、`else if`を間にはさみます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-d"
+  initialCode={`const nenrei = 10;
+let nyuujouryou;
+
+if (nenrei < 6) {
+  nyuujouryou = 0;
+} else if (nenrei < 13) {
+  nyuujouryou = 300;
+} else {
+  nyuujouryou = 800;
+}
+
+console.log(\`\${nenrei}さいの入場料は\${nyuujouryou}円です\`);`}
+/>
+
+```console
+10さいの入場料は300円です
+```
+
+上から順に条件が調べられ、最初に`true`になったブロックだけが実行されて、残りは調べられません。`nenrei`は`10`なので`nenrei < 6`は`false`、`nenrei < 13`は`true`——ここで確定し、`nyuujouryou = 800`は調べられもしません。`else if`はいくつでも重ねられます。
+
+## && ・ || ・ !——条件を組み合わせる
+
+複数の条件をまとめて1つの判断にしたいときは、`&&`（かつ）・`||`（または）・`!`（〜でない）を使います。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-e"
+  initialCode={`const isGakusei = true;
+const isHeijitsu = false;
+
+if (isGakusei && isHeijitsu) {
+  console.log("学生平日割引を適用します");
+} else {
+  console.log("通常料金です");
+}
+
+console.log(!isHeijitsu);
+console.log(isGakusei || isHeijitsu);`}
+/>
+
+```console
+通常料金です
+true
+true
+```
+
+| 演算子 | 意味 |
+|---|---|
+| `&&` | 両方が`true`のときだけ全体が`true` |
+| `\|\|` | どちらか一方でも`true`なら全体が`true` |
+| `!` | `true`と`false`をひっくり返す |
+
+`isHeijitsu`が`false`なので`isGakusei && isHeijitsu`全体は`false`になり、`else`が実行されました。`!isHeijitsu`は`false`をひっくり返して`true`、`isGakusei || isHeijitsu`はどちらか一方（`isGakusei`）が`true`なので全体も`true`です。
+
+<Exercise title="演習1: 偶数か奇数か">
+
+`kingyo`という数値の変数を用意し、`%`演算子を使って偶数なら`偶数です`、奇数なら`奇数です`と表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-ex1"
+  initialCode={`// ここに書いてみましょう
+const kingyo = 7;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+2で割った余りが0なら偶数、そうでなければ奇数です。コース1で学んだ`%`を使います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const kingyo = 7;
+
+if (kingyo % 2 === 0) {
+  console.log("...");
+} else {
+  console.log("...");
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+const kingyo = 7;
+
+if (kingyo % 2 === 0) {
+  console.log("偶数です");
+} else {
+  console.log("奇数です");
+}
+```
+
+```console
+奇数です
+```
+
+`7 % 2`は`1`なので、`0`とは等しくならず、`else`が実行されます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 金魚すくいの結果判定">
+
+`tsuttaKazu`という数値の変数（すくえた金魚の数）から、`5`以上なら`大当たり`、`2`以上なら`当たり`、それ未満なら`はずれ`と表示してください。`if`・`else if`・`else`を使います。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-ex2"
+  initialCode={`// ここに書いてみましょう
+const tsuttaKazu = 4;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+大きい条件から順に調べます。最初に`true`になったところで止まるので、`else if (tsuttaKazu >= 2)`まで来た時点で「5以上ではないこと」はもう保証されています。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const tsuttaKazu = 4;
+let kekka;
+
+if (tsuttaKazu >= 5) {
+  kekka = "...";
+} else if (tsuttaKazu >= 2) {
+  kekka = "...";
+} else {
+  kekka = "...";
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const tsuttaKazu = 4;
+let kekka;
+
+if (tsuttaKazu >= 5) {
+  kekka = "大当たり";
+} else if (tsuttaKazu >= 2) {
+  kekka = "当たり";
+} else {
+  kekka = "はずれ";
+}
+
+console.log(`${tsuttaKazu}匹すくえたので${kekka}です`);
+```
+
+```console
+4匹すくえたので当たりです
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: &&で割引条件をつくる">
+
+`isYukata`（浴衣を着ているか）と`isHanabiBi`（花火大会の日かどうか）という2つの`boolean`型変数を用意し、両方とも`true`のときだけ`特別割引を適用します`、それ以外は`通常料金です`と表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-01-ex3"
+  initialCode={`// ここに書いてみましょう
+const isYukata = true;
+const isHanabiBi = true;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+「両方ともtrue」は`&&`で表せます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+if (isYukata && isHanabiBi) {
+  console.log("...");
+} else {
+  console.log("...");
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const isYukata = true;
+const isHanabiBi = true;
+
+if (isYukata && isHanabiBi) {
+  console.log("特別割引を適用します");
+} else {
+  console.log("通常料金です");
+}
+```
+
+```console
+特別割引を適用します
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 比較演算子（`===` `!==` `<` `>` `<=` `>=`）は`boolean`型の値を作る
+- `if (条件) { ... }`の`{ }`の中だけが、条件が`true`のときに実行される
+- `{ }`はJSでは省略できてしまう。省略すると、次の1文だけが`if`の対象になり、見た目と違う動きの事故が起きる。このサイトでは常に`{ }`をつける
+- `else`は`false`のときの行き先、`else if`は3つ以上に分かれ道を増やす。上から順に調べ、最初に`true`になったところだけが実行される
+- `&&`・`||`・`!`で条件を組み合わせられる
+
+<Quiz
+  client:visible
+  storageKey="nagare-01"
+  questions={[
+    {
+      q: 'JSでifが実行する範囲を決めているのは何？',
+      choices: ['インデント（字下げ）の深さ', '{}（波かっこ）', '行末のセミコロン'],
+      answer: 1,
+      explain: 'JSではインデントは読みやすさのための習慣にすぎず、実行範囲を決めているのは{}です。{}を省略すると次の1文だけがifの対象になります。',
+    },
+    {
+      q: 'else ifを複数並べたときの評価順序として正しいのは？',
+      choices: ['下から順に調べる', '上から順に調べ、最初にtrueになったところだけが実行される', 'すべてのelse ifが実行される'],
+      answer: 1,
+      explain: '上から順に条件が調べられ、最初にtrueになったブロックだけが実行されて、残りは調べられません。',
+    },
+    {
+      q: 'isGakusei = true, isHeijitsu = false のとき、isGakusei && isHeijitsu の結果は？',
+      choices: ['true', 'false', 'エラーになる'],
+      answer: 1,
+      explain: '&&は両方がtrueのときだけ全体をtrueにします。isHeijitsuがfalseなので、全体もfalseです。',
+    },
+  ]}
+/>

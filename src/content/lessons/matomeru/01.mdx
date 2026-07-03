@@ -1,0 +1,304 @@
+---
+title: 配列
+course: matomeru
+order: 1
+description: 複数の値をひとつの名前でまとめる配列に出会います。0から始まる添字、pushで増やせる可変性、そして存在しない添字はエラーにならずundefinedになるという、JavaScriptならではの性格を学びます。
+seed: 配列に値をまとめられるようになりました。次は、その中身を1つずつ順番に取り出すためのくり返し——for-ofです。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## ひとつの名前に、ひとつの値だけでいいのか
+
+前のコースの最後では、数当てゲームを作りました。関数とくり返し、分かれ道を組み合わせた総合問題でしたが、そこで使った変数は、いつも1つの値だけを持っていました。正解の数に1つの名前、予想の数に1つの名前——1つの名前に、1つの値です。
+
+でも、縁日で売っている屋台の名前を全部覚えておきたいとしたら、どうしますか。`yatai1`、`yatai2`、`yatai3`と名前を増やしていくのは、3つならまだしも、10個、20個になったら書ききれません。JavaScriptには、**複数の値を、ひとつの名前でまとめて持っておく**ための値があります。配列です。
+
+## 配列を作る
+
+`[ ]`（角かっこ）の中に、値をカンマで区切って並べると配列になります。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-a"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+[ 'りんご飴', 'たこ焼き', '金魚すくい' ]
+```
+
+`yatai`という1つの名前で、3つの文字列をまとめて持てました。配列の中身は同じ型でそろえる必要はありません。数値と文字列と真偽値を混ぜて`[300, "りんご飴", true]`のように書くこともできます。
+
+## 添字（インデックス）で、1つずつ取り出す
+
+配列の中の値には、それぞれ**添字**（インデックス）という番号がついています。JavaScriptでは、**添字は0から始まります。**
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-b"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai[0]);
+console.log(yatai[1]);
+console.log(yatai[2]);`}
+/>
+
+```console
+りんご飴
+たこ焼き
+金魚すくい
+```
+
+`yatai[0]`が1番目の`"りんご飴"`を指します。「1番目だから1」ではなく「0番目から数える」——ここは最初、誰もが少し戸惑うところです。
+
+## length——いくつ入っているか
+
+配列に何個の値が入っているかは、`.length`で分かります。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-c"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai.length);`}
+/>
+
+```console
+3
+```
+
+`yatai.length`は`3`です。添字は0から始まるので、最後の要素の添字は`length - 1`、つまり`yatai[2]`になります。この「0始まりと`length - 1`」のずれは、あとで何度も顔を出します。
+
+## push——あとから増やす
+
+配列はあとから中身を増やせます。`push`メソッドを使うと、末尾に新しい値が追加されます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-d"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+yatai.push("わたあめ");
+console.log(yatai);
+console.log(yatai.length);`}
+/>
+
+```console
+[ 'りんご飴', 'たこ焼き', '金魚すくい', 'わたあめ' ]
+4
+```
+
+`yatai`は`const`で宣言されているのに、`push`で中身が増やせています。不思議に思うかもしれません。
+
+<Callout type="note" title="constは、名前の再代入を防ぐだけ">
+コース1で「変数は値につけた名前」だと学びました。`const`が禁止しているのは、**その名前に別の値を代入し直すこと**だけです。`yatai = ["別の配列"]`のような再代入はエラーになりますが、`yatai`が指している配列そのものの中身を書き換えることは止められません。配列は`push`のような操作で中身を変えられる**可変**な値です。文字列や数値のような**不変**な値とは、この点で性質が違います。
+</Callout>
+
+## 存在しない添字は、エラーではなくundefined
+
+ここまでの`yatai`には3つの値しかありません。では、存在しない添字にアクセスするとどうなるでしょうか。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-e"
+  initialCode={`const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai[10]);`}
+/>
+
+```console
+undefined
+```
+
+エラーにはならず、`undefined`が返ってきました。**JavaScriptは、配列の添字が範囲外でも止まりません。** Javaのような言語では配列の範囲外アクセスは例外で止まりますし、Pythonでも`IndexError`で止まります。JavaScriptは違います。存在しない添字を読み取ると、エラーにはならず、静かに`undefined`という「何もなかった」を意味する値が返ってきます。
+
+<Callout type="warn" title="つまずきポイント：JSは止まって教えてくれるとは限らない読み手">
+他の多くの言語は、間違った添字を指定するとその場でエラーを出して止まります。JavaScriptは、配列の範囲外アクセスのような場面で、エラーにせず`undefined`を返して実行を続けることがあります。「止まって教えてくれるとは限らない読み手」——これがJSの誠実な性格です。あとの章でも、この性格に何度か出会います。存在しない添字を使ってしまっていないか、`console.log`で中身を確かめる習慣が助けになります。
+</Callout>
+
+<Callout type="mame" title="マイナスの添字は使えない">
+Pythonでは`yatai[-1]`のようにマイナスの添字で末尾から数えられますが、JavaScriptにその機能はありません。`yatai[-1]`は「`-1`という名前の、存在しない添字」として扱われ、他の存在しない添字と同じく`undefined`になります。
+</Callout>
+
+<Exercise title="演習1: 屋台の配列を作る">
+
+好きな屋台の名前を3つ以上入れた配列を`yatai`という名前で作り、`console.log`で配列全体と、その`length`を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`[ ]`の中に、文字列をカンマで区切って並べます。配列全体を表示するときは`console.log(配列名)`、個数を知りたいときは`.length`を使います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yatai = ["...", "...", "..."];
+console.log(yatai);
+console.log(yatai.length);
+```
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js title="ex1.js"
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai);
+console.log(yatai.length);
+```
+
+```console
+[ 'りんご飴', 'たこ焼き', '金魚すくい' ]
+3
+```
+
+屋台の名前や数があなたのものと違っていても、配列とその`length`が正しく表示されていれば正解です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: pushで屋台を増やす">
+
+演習1の配列に、`push`で新しい屋台を1つ追加してください。追加後の配列全体と、新しい`length`を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-ex2"
+  initialCode={`// ここに書いてみましょう
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`配列名.push(追加したい値)`で、配列の末尾に値を追加できます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+yatai.push("...");
+console.log(yatai);
+console.log(yatai.length);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+yatai.push("わたあめ");
+console.log(yatai);
+console.log(yatai.length);
+```
+
+```console
+[ 'りんご飴', 'たこ焼き', '金魚すくい', 'わたあめ' ]
+4
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 範囲外の添字を確かめる">
+
+演習1の配列に対して、存在しない添字（たとえば`10`）にアクセスし、結果とその`typeof`の両方を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-01-ex3"
+  initialCode={`// ここに書いてみましょう
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+配列の要素数を超える添字にアクセスしても、JavaScriptはエラーにせず`undefined`を返します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+console.log(yatai[10]);
+console.log(typeof yatai[10]);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const yatai = ["りんご飴", "たこ焼き", "金魚すくい"];
+console.log(yatai[10]);
+console.log(typeof yatai[10]);
+```
+
+```console
+undefined
+undefined
+```
+
+`yatai[10]`の値も、その`typeof`も、どちらも`undefined`です。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 配列は`[ ]`で作る。複数の値を、ひとつの名前でまとめて持てる
+- 添字は`0`から始まる。最後の要素の添字は`length - 1`
+- `push`で末尾に値を追加できる。`const`で宣言していても、配列の中身は書き換えられる（可変）
+- 存在しない添字にアクセスしてもエラーにはならず、`undefined`が返ってくる。これはJSの誠実な性格のひとつ
+
+<Quiz
+  client:visible
+  storageKey="matomeru-01"
+  questions={[
+    {
+      q: '`const yatai = ["a", "b", "c"];` のとき、最初の要素を取り出す書き方は？',
+      choices: ['`yatai[1]`', '`yatai[0]`', '`yatai[-1]`'],
+      answer: 1,
+      explain: 'JavaScriptの配列の添字は0から始まります。最初の要素は`yatai[0]`です。',
+    },
+    {
+      q: '配列の要素数を超える添字にアクセスすると、どうなる？',
+      choices: ['エラーになって止まる', 'エラーにはならず`undefined`が返る', '自動的に`0`が入る'],
+      answer: 1,
+      explain: 'JavaScriptは配列の範囲外アクセスをエラーにしません。静かに`undefined`を返して実行を続けます。',
+    },
+    {
+      q: '`const yatai = ["a"]; yatai.push("b");` を実行するとどうなる？',
+      choices: ['`const`なのでエラーになる', '`yatai`の中身が`["a", "b"]`になる', '新しい配列が作られ、`yatai`は変わらない'],
+      answer: 1,
+      explain: '`const`が防ぐのは再代入だけです。`push`は配列の中身そのものを書き換えるので、エラーにならず`yatai`が`["a", "b"]`になります。',
+    },
+  ]}
+/>

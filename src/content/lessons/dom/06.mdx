@@ -1,0 +1,381 @@
+---
+title: 練習——カウンターと、おみくじ
+course: dom
+order: 6
+description: querySelector・textContent・classList・addEventListener・input.valueを全部使って、クリックカウンターとおみくじを作ります。コース5の総仕上げです。
+seed: 見て、書き換えて、応えて、受け取る——ページを動かす一通りの道具がそろいました。次のコースでは、これをファイルに分けて、あなたのパソコンから直接開ける「持ち帰れるアプリ」に育てていきます。
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## ここまでの道具を、1つにまとめる
+
+このコースで見てきた道具を、並べておきます。
+
+- `document.querySelector`で、木の中から要素を取る
+- `textContent`で、中身を読み書きする
+- `classList`で、見た目のクラスを付け外しする
+- `addEventListener`で、クリックに応えて動く
+- `input.value`で、読み手の入力を受け取る
+
+この5つを組み合わせれば、動く小さな道具が作れます。このレッスンでは、**クリックカウンター**と**おみくじ**という2つの遊び道具を作りながら、コース5の総仕上げをします。
+
+## クリックカウンター
+
+押すたびに数字が増えるボタンです。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-a"
+  height={160}
+  initialHtml={`<button id="counter-btn">押す</button>
+<p id="counter-display">0回</p>
+<script>
+  let count = 0;
+  const button = document.querySelector("#counter-btn");
+  const display = document.querySelector("#counter-display");
+  button.addEventListener("click", () => {
+    count = count + 1;
+    display.textContent = count + "回";
+  });
+</script>`}
+/>
+
+`count`という変数は、クリックハンドラの**外**で1回だけ`let count = 0;`と宣言されています。ボタンが押されるたびに呼ばれる関数は、その外側にある`count`を`count = count + 1;`で書き換え続けます。コース2のスコープの回で見た「外の変数への代入」が、ここで実際に働いています。もし`count`をハンドラの中で`let count = 0;`と宣言し直していたら、押すたびに0からやり直しになってしまい、カウンターにはなりません。
+
+<Callout type="warn" title="つまずきポイント：変数の宣言位置">
+数え続けたい値は、イベントハンドラの**外側**で1回だけ宣言してください。ハンドラの中で`let`や`const`を書くと、クリックのたびに新しく作り直されてしまい、前の値を覚えていられません。
+</Callout>
+
+## おみくじ——コース2・3の道具を、DOMで使う
+
+おみくじは、配列からランダムに1つ選ぶだけの仕組みです。まずはDOM抜きで、ロジックだけ確認しておきます。
+
+<CodeRunner
+  client:visible
+  storageKey="dom-06-b"
+  initialCode={`const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+const index = Math.floor(Math.random() * fortunes.length);
+console.log(fortunes[index]);`}
+/>
+
+`Math.random()`は0以上1未満の小数を返すので、それに`fortunes.length`（5）を掛けて`Math.floor`で整数にすると、0から4までの添字がランダムに手に入ります。コース2の数当てゲーム、コース3の配列——その組み合わせです。実行するたびに表示される運勢は変わりますが、どの実行でもエラーなく終わります。
+
+これをDOMにつなげると、こうなります。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-c"
+  height={160}
+  initialHtml={`<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const button = document.querySelector("#omikuji-btn");
+  const result = document.querySelector("#omikuji-result");
+  button.addEventListener("click", () => {
+    const index = Math.floor(Math.random() * fortunes.length);
+    result.textContent = fortunes[index];
+  });
+</script>`}
+/>
+
+押すたびに、5つの運勢のどれかがランダムに表示されます。ロジックの部分は、さきほどのCodeRunnerとまったく同じです。違うのは、結果を`console.log`ではなく`result.textContent`に渡している点だけです。
+
+## 2つを、1つのページに
+
+このコースの最後に、2つを1つのページにまとめてみます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-d"
+  height={260}
+  initialHtml={`<h2>縁日の遊び場</h2>
+<button id="counter-btn">押す</button>
+<p id="counter-display">0回</p>
+<hr>
+<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  let count = 0;
+  const counterBtn = document.querySelector("#counter-btn");
+  const counterDisplay = document.querySelector("#counter-display");
+  counterBtn.addEventListener("click", () => {
+    count = count + 1;
+    counterDisplay.textContent = count + "回";
+  });
+
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const omikujiBtn = document.querySelector("#omikuji-btn");
+  const omikujiResult = document.querySelector("#omikuji-result");
+  omikujiBtn.addEventListener("click", () => {
+    const index = Math.floor(Math.random() * fortunes.length);
+    omikujiResult.textContent = fortunes[index];
+  });
+</script>`}
+/>
+
+1つのページの中に、2組の`querySelector`と`addEventListener`が、それぞれ独立して動いています。カウンターのボタンを押しても、おみくじの結果は変わりません。それぞれの要素とイベントが、別々に結び付いているからです。
+
+<Exercise title="演習1: カウンターにリセットボタンを付ける">
+
+クリックカウンターに、`<button id="reset-btn">リセット</button>`を追加し、押すと`count`を0に戻して表示も`"0回"`に書き換えるようにしてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-e"
+  height={180}
+  initialHtml={`<button id="counter-btn">押す</button>
+<button id="reset-btn">リセット</button>
+<p id="counter-display">0回</p>
+<script>
+  let count = 0;
+  const counterBtn = document.querySelector("#counter-btn");
+  const display = document.querySelector("#counter-display");
+  counterBtn.addEventListener("click", () => {
+    count = count + 1;
+    display.textContent = count + "回";
+  });
+  // ここに reset-btn の addEventListener を書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+「リセット」ボタンにも、別の`addEventListener("click", ...)`を1つ足します。その中で`count`を0に戻し、`display.textContent`も`"0回"`に書き換えます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const resetBtn = document.querySelector("#reset-btn");
+resetBtn.addEventListener("click", () => {
+  count = 0;
+  display.textContent = count + "回";
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<button id="counter-btn">押す</button>
+<button id="reset-btn">リセット</button>
+<p id="counter-display">0回</p>
+<script>
+  let count = 0;
+  const counterBtn = document.querySelector("#counter-btn");
+  const display = document.querySelector("#counter-display");
+  counterBtn.addEventListener("click", () => {
+    count = count + 1;
+    display.textContent = count + "回";
+  });
+  const resetBtn = document.querySelector("#reset-btn");
+  resetBtn.addEventListener("click", () => {
+    count = 0;
+    display.textContent = count + "回";
+  });
+</script>
+```
+
+`count`は2つのハンドラの外で宣言されているので、どちらの関数からも同じ`count`を読み書きできます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: おみくじを引いた回数も数える">
+
+おみくじに、引いた回数を覚えておく変数を足し、結果の表示を`"大吉（2回目）"`のように、運勢のあとに引いた回数を続けてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-f"
+  height={180}
+  initialHtml={`<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const button = document.querySelector("#omikuji-btn");
+  const result = document.querySelector("#omikuji-result");
+  // ここに drawCount を宣言し、クリックのたびに増やしてください
+  button.addEventListener("click", () => {
+    const index = Math.floor(Math.random() * fortunes.length);
+    result.textContent = fortunes[index];
+  });
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+クリックカウンターと同じ形です。イベントハンドラの外で`let drawCount = 0;`を宣言し、クリックされるたびに`drawCount = drawCount + 1;`で増やしてから、結果の文字に続けます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let drawCount = 0;
+button.addEventListener("click", () => {
+  drawCount = drawCount + 1;
+  const index = Math.floor(Math.random() * fortunes.length);
+  result.textContent = fortunes[index] + "（" + drawCount + "回目）";
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const button = document.querySelector("#omikuji-btn");
+  const result = document.querySelector("#omikuji-result");
+  let drawCount = 0;
+  button.addEventListener("click", () => {
+    drawCount = drawCount + 1;
+    const index = Math.floor(Math.random() * fortunes.length);
+    result.textContent = fortunes[index] + "（" + drawCount + "回目）";
+  });
+</script>
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 1日3回までの、おみくじ">
+
+演習2のおみくじに、上限を付けます。`drawCount`が3回に達したあとは、運勢を引かせず`"本日はここまで"`と表示するようにしてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-06-g"
+  height={180}
+  initialHtml={`<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const button = document.querySelector("#omikuji-btn");
+  const result = document.querySelector("#omikuji-result");
+  let drawCount = 0;
+  button.addEventListener("click", () => {
+    // ここで drawCount が3以上なら "本日はここまで" を表示し、
+    // そうでなければ演習2と同じように運勢を引いて drawCount を増やしてください
+  });
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+クリックのたびに、まず`if (drawCount >= 3)`で上限を超えていないか確かめます。超えていたら`"本日はここまで"`を表示して終わり、超えていなければ演習2と同じ処理（引いて、回数を増やす）を行います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+button.addEventListener("click", () => {
+  if (drawCount >= 3) {
+    result.textContent = "本日はここまで";
+  } else {
+    drawCount = drawCount + 1;
+    const index = Math.floor(Math.random() * fortunes.length);
+    result.textContent = fortunes[index] + "（" + drawCount + "回目）";
+  }
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<button id="omikuji-btn">おみくじを引く</button>
+<p id="omikuji-result">ボタンを押してください</p>
+<script>
+  const fortunes = ["大吉", "吉", "中吉", "小吉", "凶"];
+  const button = document.querySelector("#omikuji-btn");
+  const result = document.querySelector("#omikuji-result");
+  let drawCount = 0;
+  button.addEventListener("click", () => {
+    if (drawCount >= 3) {
+      result.textContent = "本日はここまで";
+    } else {
+      drawCount = drawCount + 1;
+      const index = Math.floor(Math.random() * fortunes.length);
+      result.textContent = fortunes[index] + "（" + drawCount + "回目）";
+    }
+  });
+</script>
+```
+
+4回目以降のクリックでは、運勢が引かれる代わりに「本日はここまで」が表示され続けます。
+
+</details>
+
+</Exercise>
+
+## コース5で分かったこと
+
+- `document.querySelector`で木から要素を取り、`textContent`で中身を読み書きする
+- `classList.add/remove/toggle`で見た目のクラスを付け外しする
+- `addEventListener("click", 関数)`で、クリックという「あとで起きること」に応える。渡す関数はコース4の「値としての関数」そのもの
+- `input.value`は常に文字列。`Number()`で変換してから計算する
+- イベントハンドラをまたいで値を覚えておきたいときは、ハンドラの**外側**で変数を宣言する
+
+<Quiz
+  client:visible
+  storageKey="dom-06"
+  questions={[
+    {
+      q: 'クリックのたびに増える数を覚えておきたいとき、変数`count`を宣言する場所として正しいのは？',
+      choices: [
+        'addEventListenerに渡す関数の中',
+        'addEventListenerを呼んでいる行より外側',
+        'どちらに書いても同じ',
+      ],
+      answer: 1,
+      explain: 'ハンドラの中で宣言すると、クリックのたびに変数が作り直されてしまい、前の値を覚えていられません。外側で1回だけ宣言し、ハンドラの中では書き換えるだけにします。',
+    },
+    {
+      q: 'おみくじで「0からfortunes.length未満のランダムな添字」を作る式はどれ？',
+      choices: [
+        'Math.random() * fortunes.length',
+        'Math.floor(Math.random() * fortunes.length)',
+        'Math.floor(fortunes.length)',
+      ],
+      answer: 1,
+      explain: 'Math.random()は0以上1未満の小数を返すので、fortunes.lengthを掛けたあとMath.floorで整数に切り捨てることで、0からfortunes.length - 1までの有効な添字になります。',
+    },
+    {
+      q: '1つのページに、独立したカウンターとおみくじの両方を置けるのはなぜ？',
+      choices: [
+        'それぞれが別々の要素に対してquerySelectorとaddEventListenerを結び付けているから',
+        'JavaScriptは1つのページに1つのイベントしか登録できないから',
+        'HtmlRunnerが特別な機能で自動的に分けてくれるから',
+      ],
+      answer: 0,
+      explain: 'querySelectorで取った別々の要素に、それぞれ別のaddEventListenerを結び付けているので、互いに干渉せず独立して動きます。',
+    },
+  ]}
+/>

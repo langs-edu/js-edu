@@ -1,0 +1,352 @@
+---
+title: 配列とオブジェクトを組み合わせる
+course: matomeru
+order: 4
+description: オブジェクトの配列という、データの現実的なかたちを作ります。for-ofで歩きながらそれぞれのプロパティにアクセスし、配列とオブジェクトが入れ子になったネストへのアクセスも学びます。
+seed: "mise.namaeやmise.nedanのように、同じ形のアクセスを何度も書いてきました。次は、そこから値をまとめて取り出す、短い書き方に出会います。"
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 1つの屋台では、足りない
+
+前回、`{ namae: "りんご飴", nedan: 300, zaiko: 12 }`のようなオブジェクトで、1つの屋台の情報をまとめられるようになりました。でも実際の縁日には、屋台がいくつもあります。10軒あれば10個のオブジェクトです。
+
+10個のオブジェクトに、それぞれ`yatai1`、`yatai2`……と名前をつけていくのは、レッスン1の最初に出てきた問題と同じです。答えも同じ——**配列**を使います。配列の中身はオブジェクトでもかまいません。**オブジェクトの配列**は、現実のデータをそのまま表せる、とても実用的なかたちです。
+
+## オブジェクトの配列を作る
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-a"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "金魚すくい", nedan: 300 },
+];
+console.log(yataiList);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+[
+  { namae: 'りんご飴', nedan: 300 },
+  { namae: 'たこ焼き', nedan: 500 },
+  { namae: '金魚すくい', nedan: 300 }
+]
+```
+
+配列の`[ ]`の中に、オブジェクトの`{ }`が3つ並んでいます。配列の中身がオブジェクトであること以外、これまでと変わりはありません。
+
+## 1件だけ取り出す
+
+配列なので、添字でアクセスできます。取り出した先はオブジェクトなので、続けてドット記法が使えます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-b"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+];
+console.log(yataiList[0]);
+console.log(yataiList[0].namae);`}
+/>
+
+```console
+{ namae: 'りんご飴', nedan: 300 }
+りんご飴
+```
+
+`yataiList[0]`でオブジェクトを取り出し、続けて`.namae`でそのオブジェクトのキーにアクセスしています。`配列[添字].キー`という並びは、この先も繰り返し出てくる形です。
+
+## for-ofで、全部を歩く
+
+前々回学んだ`for-of`は、配列の中身がオブジェクトでもそのまま使えます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-c"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "金魚すくい", nedan: 300 },
+];
+for (const mise of yataiList) {
+  console.log(\`\${mise.namae}: \${mise.nedan}円\`);
+}`}
+/>
+
+```console
+りんご飴: 300円
+たこ焼き: 500円
+金魚すくい: 300円
+```
+
+`mise`には、配列から取り出された1つ1つのオブジェクトが入ります。`mise.namae`・`mise.nedan`で、それぞれのプロパティにアクセスできます。
+
+## ネストへのアクセス
+
+オブジェクトの中の値が、さらに配列やオブジェクトになっていることもあります。これを**ネスト**（入れ子）と呼びます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-d"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300, iro: ["赤", "青"] },
+  { namae: "たこ焼き", nedan: 500, iro: [] },
+];
+console.log(yataiList[0].iro[0]);
+console.log(yataiList[0].iro);
+console.log(yataiList[1].iro);`}
+/>
+
+```console
+赤
+[ '赤', '青' ]
+[]
+```
+
+`yataiList[0]`でオブジェクトを取り出し、`.iro`でその中の配列を取り出し、さらに`[0]`でその配列の1つ目の値を取り出しています。`配列 → オブジェクト → 配列`と、外側から内側へたどっていけば、どれだけ入れ子になっていても読めます。`たこ焼き`の`iro`は空の配列`[]`——「色のバリエーションは無い」という状態も、ちゃんと表現できています。
+
+<Callout type="mame" title="存在しない添字から、さらに先へたどると">
+`yataiList[10]`のように存在しない添字を指定すると、レッスン1で見たとおり`undefined`が返ります。そこからさらに`.namae`のように先へたどろうとすると、「`undefined`の先のプロパティを読む」ことになり、エラーで止まります。ネストが深くなるほど、この「途中が`undefined`だった」事故に出会いやすくなります。安全にたどる方法は、レッスン6で扱います。
+</Callout>
+
+## 練習: 一番高い屋台を探す
+
+`for-of`と`if`を組み合わせると、配列の中から条件に合うものを探せます。値段が一番高い屋台を探してみましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-e"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "金魚すくい", nedan: 300 },
+];
+
+let takai = yataiList[0];
+for (const mise of yataiList) {
+  if (mise.nedan > takai.nedan) {
+    takai = mise;
+  }
+}
+
+console.log(\`\${takai.namae}が一番高い（\${takai.nedan}円）\`);`}
+/>
+
+```console
+たこ焼きが一番高い（500円）
+```
+
+`takai`という変数に「今のところ一番高い屋台」を入れておき、`for-of`で1つずつ比べながら、もっと高い屋台が出てきたら`takai`を更新しています。最初に`takai = yataiList[0]`としておくのがポイントです。比べる基準がなければ、比較そのものができません。
+
+<Exercise title="演習1: 屋台リストを作って歩く">
+
+`namae`と`nedan`を持つ屋台のオブジェクトを3つ以上入れた配列`yataiList`を作り、`for-of`で1つずつ取り出しながら`名前: 値段円`の形で表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+本文の`yataiList`の例と同じ形です。`for (const mise of yataiList)`の中で、テンプレートリテラルを使います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yataiList = [
+  { namae: "...", nedan: ... },
+  { namae: "...", nedan: ... },
+];
+for (const mise of yataiList) {
+  console.log(`${mise.namae}: ${mise.nedan}円`);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js title="ex1.js"
+const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "わたあめ", nedan: 250 },
+];
+for (const mise of yataiList) {
+  console.log(`${mise.namae}: ${mise.nedan}円`);
+}
+```
+
+```console
+りんご飴: 300円
+たこ焼き: 500円
+わたあめ: 250円
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: ネストしたトッピングにアクセスする">
+
+`{ namae: "たこ焼き", nedan: 500, topping: ["青のり", "紅しょうが"] }`という1件だけのオブジェクトを配列に入れ、`topping`の2つ目の値を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-ex2"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`配列[0].topping[1]`のように、外側から内側へたどります。`topping`の2つ目は添字`1`です。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yataiList = [
+  { namae: "たこ焼き", nedan: 500, topping: ["...", "..."] },
+];
+console.log(yataiList[0].topping[1]);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const yataiList = [
+  { namae: "たこ焼き", nedan: 500, topping: ["青のり", "紅しょうが"] },
+];
+console.log(yataiList[0].topping[1]);
+```
+
+```console
+紅しょうが
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 一番安い屋台を探す">
+
+本文の「一番高い屋台を探す」を参考に、`yataiList`の中から一番**安い**屋台を探して表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-04-ex3"
+  initialCode={`// ここに書いてみましょう
+const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "わたあめ", nedan: 250 },
+];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+本文の`takai`（高い）の例で使った`>`を`<`に変えるだけです。「今のところ一番安い屋台」を最初に`yataiList[0]`にしておきます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let yasui = yataiList[0];
+for (const mise of yataiList) {
+  if (mise.nedan < yasui.nedan) {
+    yasui = mise;
+  }
+}
+console.log(`${yasui.namae}が一番安い（${yasui.nedan}円）`);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+  { namae: "わたあめ", nedan: 250 },
+];
+
+let yasui = yataiList[0];
+for (const mise of yataiList) {
+  if (mise.nedan < yasui.nedan) {
+    yasui = mise;
+  }
+}
+
+console.log(`${yasui.namae}が一番安い（${yasui.nedan}円）`);
+```
+
+```console
+わたあめが一番安い（250円）
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 配列の中身はオブジェクトでもよい。**オブジェクトの配列**は、現実のデータをそのまま表せるかたち
+- `配列[添字].キー`で、1件取り出してからプロパティにアクセスできる
+- `for-of`は、配列の中身がオブジェクトでもそのまま使える
+- オブジェクトの中の値が配列やオブジェクトになっている**ネスト**も、外側から内側へたどれば読める
+- `for-of`と`if`を組み合わせると、条件に合う要素を配列の中から探せる
+
+<Quiz
+  client:visible
+  storageKey="matomeru-04"
+  questions={[
+    {
+      q: '`const list = [{ namae: "a" }, { namae: "b" }];` のとき、2つ目の要素の`namae`を取り出す書き方は？',
+      choices: ['`list.namae[1]`', '`list[1].namae`', '`list[namae][1]`'],
+      answer: 1,
+      explain: 'まず配列の添字でオブジェクトを取り出し（list[1]）、続けてドット記法でキーにアクセスします（.namae）。',
+    },
+    {
+      q: '`for (const mise of yataiList)` で、`mise`に入るのは？',
+      choices: ['添字の数値', '配列から取り出された1つのオブジェクト', 'yataiList全体'],
+      answer: 1,
+      explain: 'for-ofは配列の値を先頭から順番に取り出します。yataiListの中身はオブジェクトなので、miseにはオブジェクトが1つずつ入ります。',
+    },
+    {
+      q: '一番高い屋台を探すコードで、最初に`takai = yataiList[0]`としておく理由は？',
+      choices: ['見た目を整えるため', '比べる基準となる値が最初に必要だから', 'yataiList[0]が必ず一番高いから'],
+      answer: 1,
+      explain: '「もっと高いものが出てきたら更新する」という比較には、最初の基準が要ります。yataiList[0]をひとまずの基準にしておきます。',
+    },
+  ]}
+/>

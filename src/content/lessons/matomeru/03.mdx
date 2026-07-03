@@ -1,0 +1,336 @@
+---
+title: オブジェクト
+course: matomeru
+order: 3
+description: キーと値のペアでデータをまとめるオブジェクトに出会います。ドット記法とブラケット記法の使い分け、値の追加・上書き、存在しないキーもundefinedになること、in演算子を学ぶ、JSの心臓部です。
+seed: 1つの屋台の情報は、オブジェクトにまとまりました。でも縁日には、屋台がいくつもあります。次は、配列とオブジェクトを組み合わせて、もっと現実に近いデータのかたちを作ります。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 名前と値のペアで、1つのまとまりを表したい
+
+配列は、同じ種類の値を順番に並べるのに向いています。でも、1つの屋台の情報——名前、値段、在庫——をまとめたいときはどうでしょう。`["りんご飴", 300, 12]`のように配列に入れることもできますが、`yatai[0]`が名前で`yatai[1]`が値段だと、書いた本人以外には分かりません。順番を覚えていないと読めないデータは、扱いにくいものです。
+
+JavaScriptには、**名前（キー）と値のペアでデータをまとめる**値があります。オブジェクトです。配列と並んで、**JSの心臓部**と言っていい存在です。
+
+## オブジェクトを作る
+
+`{ }`（波かっこ）の中に、`キー: 値`の組をカンマで区切って並べます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-a"
+  initialCode={`const yatai = {
+  namae: "りんご飴",
+  nedan: 300,
+  zaiko: 12,
+};
+console.log(yatai);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+{ namae: 'りんご飴', nedan: 300, zaiko: 12 }
+```
+
+`namae`・`nedan`・`zaiko`が**キー**、その右側の`"りんご飴"`・`300`・`12`が**値**です。配列と違って、それぞれの値に名前がついているので、`yatai.nedan`が「値段」だとひと目で分かります。
+
+## ドット記法で、値を取り出す
+
+キーが分かっていれば、`.`（ドット）でその値にアクセスできます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-b"
+  initialCode={`const yatai = { namae: "りんご飴", nedan: 300, zaiko: 12 };
+console.log(yatai.namae);
+console.log(yatai.nedan);`}
+/>
+
+```console
+りんご飴
+300
+```
+
+## ブラケット記法で、値を取り出す
+
+`[ ]`の中にキーを文字列で入れる書き方もあります。**ブラケット記法**と呼びます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-c"
+  initialCode={`const yatai = { namae: "りんご飴", nedan: 300, zaiko: 12 };
+const key = "nedan";
+console.log(yatai[key]);`}
+/>
+
+```console
+300
+```
+
+`yatai.nedan`と`yatai["nedan"]`は同じ値を指します。では、なぜ2つの書き方があるのでしょうか。ドット記法は、キーの名前をコードにそのまま書きます。一方ブラケット記法は、`key`のような**変数**をキーとして使えます。「どのキーを見るかは、実行してみないと分からない」場面では、ブラケット記法しか使えません。
+
+<Callout type="warn" title="つまずきポイント：ハイフンを含むキーはブラケット記法が必須">
+キーの名前にハイフンやスペースが入っていると、ドット記法は使えません。
+
+```js expect-error
+const mise = { "closed-day": "水曜日" };
+console.log(mise.closed-day);
+```
+
+実行すると、次のようなエラーになります（実際にはこの上にファイル名や行番号を示す行も表示されますが、ここではエラーの種類だけ示します）。
+
+```console
+ReferenceError: day is not defined
+```
+
+`mise.closed-day`は「`mise.closed`引く`day`」という、まったく別の式として読まれてしまいます。`day`という変数はどこにもないので、`ReferenceError`です。こういうキーには、最初からブラケット記法を使ってください。
+
+```js
+const mise = { "closed-day": "水曜日" };
+console.log(mise["closed-day"]);
+```
+
+```console
+水曜日
+```
+</Callout>
+
+## 追加と上書き
+
+すでにあるオブジェクトに、新しいキーを追加したり、既存のキーの値を書き換えたりできます。配列の`push`と同じく、`const`でも中身は変えられます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-d"
+  initialCode={`const yatai = { namae: "りんご飴", nedan: 300, zaiko: 12 };
+yatai.zaiko = 11;
+yatai.tenpo = "北口";
+console.log(yatai);`}
+/>
+
+```console
+{ namae: 'りんご飴', nedan: 300, zaiko: 11, tenpo: '北口' }
+```
+
+`yatai.zaiko = 11;`は既存のキーの上書き、`yatai.tenpo = "北口";`は新しいキーの追加です。どちらも同じ`オブジェクト.キー = 値`という代入の形で書けます。
+
+## 存在しないキーも、undefined
+
+配列の存在しない添字と同じ性格が、オブジェクトのキーにもあります。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-e"
+  initialCode={`const yatai = { namae: "りんご飴", nedan: 300, zaiko: 12 };
+console.log(yatai.iro);`}
+/>
+
+```console
+undefined
+```
+
+`yatai`に`iro`というキーはありません。それでもエラーにはならず、`undefined`が返ってきます。前回の配列と同じ「JSは止まって教えてくれるとは限らない読み手」という性格が、ここにも表れています。
+
+## in演算子——キーがあるかどうかを調べる
+
+キーそのものが存在するかどうかは、`in`演算子で調べられます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-f"
+  initialCode={`const yatai = { namae: "りんご飴", nedan: 300, zaiko: 12 };
+console.log("nedan" in yatai);
+console.log("iro" in yatai);`}
+/>
+
+```console
+true
+false
+```
+
+`"キー名" in オブジェクト`という形で、`boolean`が返ります。
+
+<Exercise title="演習1: 屋台のオブジェクトを作る">
+
+`namae`（名前）・`nedan`（値段）を持つ屋台のオブジェクトを`yatai`という名前で作り、`console.log`でオブジェクト全体と、ドット記法でそれぞれのキーの値を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`{ キー: 値, キー: 値 }`の形でオブジェクトを作り、`オブジェクト.キー`で値にアクセスします。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yatai = { namae: "...", nedan: ... };
+console.log(yatai);
+console.log(yatai.namae);
+console.log(yatai.nedan);
+```
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js title="ex1.js"
+const yatai = { namae: "たこ焼き", nedan: 500, zaiko: 8 };
+console.log(yatai);
+console.log(yatai.namae);
+console.log(yatai.nedan);
+```
+
+```console
+{ namae: 'たこ焼き', nedan: 500, zaiko: 8 }
+たこ焼き
+500
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 変数のキーでブラケット記法を使う">
+
+演習1のオブジェクトに対して、`key`という変数に`"zaiko"`を代入し、ブラケット記法で`yatai[key]`の値を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-ex2"
+  initialCode={`// ここに書いてみましょう
+const yatai = { namae: "たこ焼き", nedan: 500, zaiko: 8 };
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`yatai["zaiko"]`と直接書くのではなく、いったん`key`という変数にキー名を入れてから`yatai[key]`とします。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const key = "zaiko";
+console.log(yatai[key]);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const yatai = { namae: "たこ焼き", nedan: 500, zaiko: 8 };
+const key = "zaiko";
+console.log(yatai[key]);
+```
+
+```console
+8
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: inでキーの存在を確かめる">
+
+`yatai`という`{ namae: "たこ焼き", nedan: 500 }`があります。`"nedan"`というキーと`"zaiko"`というキーそれぞれについて、`in`演算子で存在するかどうかを表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-03-ex3"
+  initialCode={`// ここに書いてみましょう
+const yatai = { namae: "たこ焼き", nedan: 500 };
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`"キー名" in オブジェクト`という形で、キーが存在するかどうかを`boolean`で調べられます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+console.log("nedan" in yatai);
+console.log("zaiko" in yatai);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const yatai = { namae: "たこ焼き", nedan: 500 };
+console.log("nedan" in yatai);
+console.log("zaiko" in yatai);
+```
+
+```console
+true
+false
+```
+
+`yatai`に`zaiko`というキーは無いので、`"zaiko" in yatai`は`false`です。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- オブジェクトは`{ キー: 値, ... }`で作る。名前と値のペアでデータをまとめられる
+- ドット記法（`obj.key`）とブラケット記法（`obj[key]`）は同じ値を指す。キーが変数のときや、ハイフン・スペースを含むときはブラケット記法を使う
+- `obj.key = 値`で、既存キーの上書きも新しいキーの追加もできる
+- 存在しないキーにアクセスしてもエラーにはならず、`undefined`が返る
+- `"キー" in オブジェクト`で、キーそのものが存在するかを調べられる
+
+<Quiz
+  client:visible
+  storageKey="matomeru-03"
+  questions={[
+    {
+      q: 'キーが変数`key`に入っているとき、その値を取り出す正しい書き方は？',
+      choices: ['`obj.key`', '`obj[key]`', '`obj["key"]`'],
+      answer: 1,
+      explain: 'ドット記法（obj.key）はキー名をそのまま書きます。変数に入ったキー名を使うにはブラケット記法`obj[key]`が必要です。',
+    },
+    {
+      q: '`const yatai = { namae: "たこ焼き" }; console.log(yatai.nedan);` の結果は？',
+      choices: ['エラーになる', '`undefined`が表示される', '`null`が表示される'],
+      answer: 1,
+      explain: '存在しないキーへのアクセスは、配列の範囲外アクセスと同じく、エラーにはならず`undefined`を返します。',
+    },
+    {
+      q: '`"nedan" in yatai` が調べているのは？',
+      choices: ['nedanという変数が宣言されているか', 'yataiにnedanというキーが存在するか', 'nedanの値がtruthyかどうか'],
+      answer: 1,
+      explain: 'in演算子は、指定した名前のキーがオブジェクトに存在するかどうかをbooleanで返します。',
+    },
+  ]}
+/>

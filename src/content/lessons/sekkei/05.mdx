@@ -1,0 +1,405 @@
+---
+title: class——かたちを定義する
+course: sekkei
+order: 5
+description: constructor・メソッド・newを使って、同じ形のオブジェクトをいくつも作れるclassを学びます。thisの安全な扱い方と、newを忘れたときの実物のエラーつきです。
+seed: classでかたちを定義できるようになりました。でも、そのオブジェクトを保存したり、よそに送ったりするには、文字列にする必要があります。次は、JSON——データを文字にして運ぶ方法です。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 同じ形のオブジェクトを、何個も作りたい
+
+コース3でオブジェクトを、レッスン1で「関数もオブジェクトに入れられる」ことを学びました。この2つを組み合わせると、次のようなものが書けます。屋台を2つ、それぞれ`name`・`price`・`stock`（在庫）と、`sell`（売る）という関数を持つオブジェクトとして表してみます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-05-a-obj"
+  initialCode={`const appleCandy = {
+  name: "りんご飴",
+  price: 300,
+  stock: 5,
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  },
+};
+
+const ramune = {
+  name: "ラムネ",
+  price: 200,
+  stock: 10,
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  },
+};
+
+console.log(appleCandy.sell(2));
+console.log(appleCandy.stock);
+console.log(ramune.sell(3));
+console.log(ramune.stock);`}
+/>
+
+オブジェクトリテラルの中では、`sell: function (count) { ... }`の代わりに`sell(count) { ... }`と、`function`を省いた書き方ができます。これを**メソッド記法**と呼びます。中の`this`は、「そのメソッドを呼び出したオブジェクト自身」を指します。`appleCandy.sell(2)`の中の`this`は`appleCandy`、`ramune.sell(3)`の中の`this`は`ramune`です。
+
+動きはします。でも、屋台が3つ、10個と増えていくと、`name`・`price`・`stock`・`sell`をまるごとコピーして貼り付けることになります。`sell`の中身にバグが見つかったら、コピーした数だけ直して回らなければなりません。
+
+## classで、かたちを1つにまとめる
+
+「同じ形のオブジェクトを、いくつも作る」ための専用の書き方が**class**です。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-05-b-class"
+  initialCode={`class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  }
+
+  describe() {
+    return \`\${this.name}（\${this.price}円、残り\${this.stock}個）\`;
+  }
+}
+
+const appleCandy = new Yatai("りんご飴", 300, 5);
+const ramune = new Yatai("ラムネ", 200, 10);
+
+console.log(appleCandy.sell(2));
+console.log(appleCandy.describe());
+console.log(ramune.sell(3));
+console.log(ramune.describe());`}
+/>
+
+1つずつ見ていきます。
+
+- `class Yatai { ... }`——`Yatai`という名前の**かたち**を定義します。クラス名は`CapWords`（先頭を大文字にする書き方）にします
+- `constructor(name, price, stock) { ... }`——`new Yatai(...)`で新しいオブジェクトを作るときに、最初に1回だけ呼ばれる特別なメソッドです。受け取った引数を`this.name = name;`のように、そのオブジェクト自身のプロパティに詰めていきます
+- `sell(count) { ... }`と`describe() { ... }`——ふつうのメソッドです。書き方は、さっきのオブジェクトリテラルの中の`sell(count) { ... }`と同じ**メソッド記法**です
+- `new Yatai("りんご飴", 300, 5)`——`Yatai`というかたちに沿って、実際のオブジェクト（**インスタンス**と呼びます）を1つ作ります。`new`を忘れずに
+
+`appleCandy`と`ramune`は、同じ`Yatai`というかたちから作られていますが、それぞれ別の`name`・`price`・`stock`を持つ、別々のオブジェクトです。`appleCandy.sell(2)`は`appleCandy`の`stock`だけを減らし、`ramune`には影響しません。
+
+<Callout type="warn" title="つまずきポイント：newを忘れると呼び出せない">
+`class`から作ったコンストラクタは、`new`をつけずに関数として呼び出そうとするとエラーになります。
+
+```js expect-error
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+}
+
+const broken = Yatai("たこ焼き", 400, 3);
+console.log(broken);
+```
+
+```console
+TypeError: Class constructor Yatai cannot be invoked without 'new'
+```
+
+`function`宣言と違い、`class`のコンストラクタは`new`をつけて呼ぶこと以外を許しません。「`new`をつけ忘れたら、その場でちゃんと教えてくれる」——これはJavaScriptにしては珍しく、親切な部類のエラーです。
+</Callout>
+
+## thisの安全な書き方
+
+`this`は奥が深く、書き方によっては「呼び出したオブジェクト自身」ではなく別のものを指してしまうことがあります。特に、メソッドをアロー関数（`sell: (count) => { ... }`のような形）で書くと、期待した`this`にならない場合があります。
+
+<Callout type="note" title="このサイトの安全な流儀">
+この縁日では、`class`の中のメソッドは、すべて`名前(引数) { ... }`という**メソッド記法**で書きます。アロー関数をメソッドとして使うことはしません。この形を守っていれば、`this`は「そのメソッドを呼び出したオブジェクト自身」に安定して結びつきます。`this`の細かい仕組みには、ここでは立ち入りません。
+</Callout>
+
+<Callout type="mame" title="classは、あとから入った見た目">
+JavaScriptに`class`という書き方が入ったのは、比較的最近のことです。それより前から、JavaScriptには「同じ形のオブジェクトを作る」ためのしくみ（**プロトタイプ**と呼ばれます）がありました。`class`は、その裏の仕組みの上に乗った、読みやすい見た目（構文糖と呼ばれます）です。プロトタイプそのものの説明は、このレッスンでは扱いません。名前だけ、頭の片隅に置いておいてください。
+</Callout>
+
+<Exercise title="演習1: restockメソッドを追加する">
+
+`Yatai`クラスに、在庫を補充する`restock(count)`メソッドを追加してください。`this.stock`に`count`を足すだけのメソッドです。`ラムネ`を10個の在庫で作り、`4`個売ったあとに`6`個補充して、`describe()`の結果を表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-05-ex1"
+  initialCode={`// ここでrestockメソッドを追加して試してみましょう
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  }
+
+  describe() {
+    return \`\${this.name}（\${this.price}円、残り\${this.stock}個）\`;
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`sell`が`this.stock -= count;`で減らしているのと逆に、`restock`は`this.stock += count;`で増やします。戻り値は不要です。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+restock(count) {
+  this.stock += ...;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  }
+
+  restock(count) {
+    this.stock += count;
+  }
+
+  describe() {
+    return `${this.name}（${this.price}円、残り${this.stock}個）`;
+  }
+}
+
+const ramune = new Yatai("ラムネ", 200, 10);
+ramune.sell(4);
+ramune.restock(6);
+console.log(ramune.describe());
+```
+
+`10`個から`4`個売って`6`個、そこに`6`個補充して`12`個になります。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 3つ目の屋台を作る">
+
+`Yatai`クラスから、`"金魚すくい"`（`500`円、在庫`8`個）というインスタンスを`kingyo`という名前で作ってください。作った直後の`describe()`、`2`個売ったあとの`sell`の戻り値、そして売ったあとの`describe()`を、順番に表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-05-ex2"
+  initialCode={`// ここで金魚すくいのインスタンスを作って試してみましょう
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  }
+
+  describe() {
+    return \`\${this.name}（\${this.price}円、残り\${this.stock}個）\`;
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`appleCandy`や`ramune`と同じように、`new Yatai(名前, 値段, 在庫)`という形でインスタンスを作ります。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const kingyo = new Yatai("金魚すくい", 500, 8);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  sell(count) {
+    this.stock -= count;
+    return this.price * count;
+  }
+
+  describe() {
+    return `${this.name}（${this.price}円、残り${this.stock}個）`;
+  }
+}
+
+const kingyo = new Yatai("金魚すくい", 500, 8);
+console.log(kingyo.describe());
+console.log(kingyo.sell(2));
+console.log(kingyo.describe());
+```
+
+同じ`Yatai`というかたちから、`appleCandy`や`ramune`とはまったく別の、独立したインスタンスが作れています。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: newを忘れたコードを直す">
+
+次のコードは`TypeError: Class constructor Yatai cannot be invoked without 'new'`になります。原因を確認したうえで、正しく動くように直してください。
+
+```js nocheck
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  describe() {
+    return `${this.name}（${this.price}円、残り${this.stock}個）`;
+  }
+}
+
+const takoyaki = Yatai("たこ焼き", 400, 3);
+console.log(takoyaki.describe());
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-05-ex3"
+  expectError
+  initialCode={`// このコードを直してみましょう（このままではTypeErrorになります）
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  describe() {
+    return \`\${this.name}（\${this.price}円、残り\${this.stock}個）\`;
+  }
+}
+
+const takoyaki = Yatai("たこ焼き", 400, 3);
+console.log(takoyaki.describe());`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`Yatai(...)`のように、`new`をつけずにクラスを直接呼び出しています。クラスからインスタンスを作るときは、必ず`new`が必要でした。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const takoyaki = new Yatai("たこ焼き", 400, 3);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Yatai {
+  constructor(name, price, stock) {
+    this.name = name;
+    this.price = price;
+    this.stock = stock;
+  }
+
+  describe() {
+    return `${this.name}（${this.price}円、残り${this.stock}個）`;
+  }
+}
+
+const takoyaki = new Yatai("たこ焼き", 400, 3);
+console.log(takoyaki.describe());
+```
+
+`new`を1つ足すだけで、`Yatai`のコンストラクタが正しく呼ばれ、`たこ焼き（400円、残り3個）`が表示されます。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `class 名前 { ... }`で、同じ形のオブジェクトを作るための**かたち**を定義できる
+- `constructor(引数) { ... }`は、`new`で作るときに最初に1回だけ呼ばれ、`this.プロパティ = 値`で初期値を詰める
+- `new クラス名(引数)`で、そのかたちに沿った**インスタンス**を作る。`new`を忘れるとTypeErrorになる
+- メソッドは`名前(引数) { ... }`という**メソッド記法**で書く。このサイトでは、`this`を安定させるため、メソッドをアロー関数では書かない
+- `class`は比較的あとから入った見た目で、裏の仕組み（プロトタイプ）は別にある。詳細はここでは扱わない
+
+<Quiz
+  client:visible
+  storageKey="sekkei-05"
+  questions={[
+    {
+      q: '`constructor`の役割として正しいのは？',
+      choices: [
+        'クラスの中で一番最後に呼ばれる後始末用のメソッド',
+        '`new`でインスタンスを作るときに、最初に1回だけ呼ばれ、初期値を設定するメソッド',
+        'すべてのインスタンスで共有される、書き換え不可の値',
+      ],
+      answer: 1,
+      explain: 'constructorは、newで新しいインスタンスを作る瞬間に呼ばれ、そのインスタンス自身に初期値を設定します。',
+    },
+    {
+      q: '`class Yatai { ... }` に対して `Yatai("たこ焼き", 400, 3)`（newなし）と書くとどうなる？',
+      choices: [
+        '普通にインスタンスが作られる',
+        'TypeErrorになる（newをつけずにクラスのコンストラクタは呼べない）',
+        '警告だけ出て、そのまま実行される',
+      ],
+      answer: 1,
+      explain: 'classのコンストラクタは、newをつけずに関数として呼び出そうとするとTypeErrorになります。',
+    },
+    {
+      q: 'このサイトが、classのメソッドをアロー関数ではなく普通のメソッド記法で書く理由は？',
+      choices: [
+        'アロー関数はclassの中では文法エラーになるから',
+        'メソッド記法の方がタイプ数が少ないから',
+        'アロー関数でメソッドを書くと、thisが期待通りにならないことがあり、メソッド記法の方が安全だから',
+      ],
+      answer: 2,
+      explain: 'アロー関数はthisの扱いが通常の関数と異なり、メソッドとして使うと期待した動きにならないことがあります。安全のため、メソッド記法を使います。',
+    },
+  ]}
+/>

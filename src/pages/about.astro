@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/url';
+---
+
+<BaseLayout title="このサイトについて" description="JavaScript縁日の考えかたと、対象読者、ライセンスについて。">
+  <main class="container">
+    <article class="about prose">
+      <p class="leaf-rule">このサイトについて</p>
+      <h1>インストール不要。全レッスンに、その場で書き換えて実行できる遊び場があります。</h1>
+
+      <p>
+        JavaScriptは、ブラウザの言語です。ほかの言語の入門とはちがって、あなたのパソコンに何かをインストールしなくても、いま開いているこのページの中でコードを動かせます。JavaScript縁日は、その特権を最大限に使うために作られたサイトです。
+      </p>
+      <p>
+        レッスンの中の実行例は、原則としてすべて<strong>CodeRunner</strong>（ブラウザ内実行のプレイグラウンド）に入っています。読むだけでなく、その場で書き換えて、もう一度実行できます。「押して、動かして、確かめる」——これがこの縁日でいちばん大事にしていることです。
+      </p>
+
+      <h2>対象読者</h2>
+      <p>
+        プログラミングが完全に初めての方から、他の言語を少し触ったことがある方まで。日本語が読める方であれば、誰でも歩けるように書いています。前提となるのは、あなたのブラウザだけです。<a
+          href={withBase('/courses/hajimete/')}>コース1「はじめてのJavaScript」</a
+        >からどうぞ。
+      </p>
+
+      <h2>この縁日の決めごと</h2>
+      <ul>
+        <li><strong>登録不要・広告なし・ずっと無料。</strong>進捗はあなたのブラウザにだけ保存され、このサイトはあなたが誰かを知りません</li>
+        <li><strong>あとで壊れるたとえで教えません。</strong>「変数は箱」のような分かった気にさせる説明ではなく、最初から正しい絵を描きます</li>
+        <li><strong>つまずく場所は、正直に予告します。</strong>つまずくのは、あなたのせいではありません</li>
+        <li><strong>エラーは失敗ではなく、誠実な読み手の返事です。</strong>ただしJavaScriptは、止まって教えてくれるとは限らない読み手でもあります——undefinedやNaNが黙って流れていくことも、隠さずお伝えします</li>
+        <li><strong>サンプルコードとプレイグラウンドの初期コードはCIで検証済みです。</strong><code>Node.js 22</code>による実行検証をしています。ブラウザ専用（DOM）の例と意図的なエラー例（<code>expectError</code> / <code>nocheck</code>指定）だけは検証対象から外し、実物の動作を確認した上で掲載しています</li>
+      </ul>
+
+      <h2>ライセンス</h2>
+      <p>
+        <strong>コード</strong>: <a href="https://github.com/langs-edu/js-edu/blob/main/LICENSE">MIT License</a> — サイト実装に加え、レッスン内のサンプルコードも含みます。学習・改変・再利用は自由です。
+      </p>
+      <p>
+        <strong>教材テキスト</strong>: <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja">CC BY-SA 4.0</a> — レッスンやコラムの文章・説明文が対象です。
+      </p>
+
+      <h2>リポジトリと姉妹サイト</h2>
+      <p>
+        このサイトの教材とコードは、すべて<a href="https://github.com/langs-edu/js-edu">GitHubで公開</a>されています。issueやpull requestも歓迎です。
+      </p>
+      <p>
+        姉妹サイトに、CS・プログラミング言語教育サイト「<a href="https://kmizu.github.io/cs-edu-site/">言語の庭</a>」、Java学習サイト「<a href="https://langs-edu.github.io/java-edu/">喫茶Java</a>」、Python学習サイト「<a href="https://langs-edu.github.io/python-edu/">Pythonの湯</a>」があります。プログラミングを「ことば」として学ぶ庭と、もう二杯のプログラミング言語——あわせてどうぞ。
+      </p>
+
+      <p class="about-cta">
+        <a class="btn btn-primary" href={withBase('/courses/hajimete/01/')}>最初のレッスンを歩く</a>
+      </p>
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .about {
+    padding-block: var(--space-6);
+  }
+
+  .about h1 {
+    margin-block: var(--space-2) var(--space-4);
+  }
+
+  .about h2 {
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-3);
+  }
+
+  .about p,
+  .about li {
+    color: var(--c-ink-2);
+    line-height: 2.05;
+  }
+
+  .about ul {
+    padding-left: 1.3em;
+  }
+
+  .about li {
+    margin-bottom: 0.6em;
+  }
+
+  .about-cta {
+    margin-top: var(--space-5);
+  }
+</style>

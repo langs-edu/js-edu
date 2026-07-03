@@ -1,0 +1,387 @@
+---
+title: イベントで繋ぐ
+course: koubou
+order: 4
+description: フォームからの追加・検索ボックス・削除ボタンを、イベントで結びつけます。「状態を変えたら描き直す」という、この先も使い続ける再レンダリングの型を身につけます。
+seed: hondanaは、画面から追加・検索・削除ができるようになりました。でも今のロジックは、hondana.jsの中に画面の配線と一緒に埋め込まれたままです。次は、これをテストできる形に整理します。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+
+## コードを書き換えなくても、話しかけられる道具に
+
+ここまでのhondanaは、開くたびに`shelf`という2冊固定の配列を保存し直していました。本を増やすには`hondana.js`を書き換える必要があり、それでは道具として使えません。今日のゴールは、画面のフォームから本を追加し、検索し、削除できるようにすることです。
+
+## フォームを送信するイベントを受け取る
+
+`index.html`に、タイトル・著者・評価・感想を入力する`<form>`を用意します。
+
+```html
+<form id="add-form">
+  <input id="title-input" placeholder="タイトル">
+  <input id="author-input" placeholder="著者">
+  <input id="rating-input" type="number" min="1" max="5" placeholder="評価(1〜5)">
+  <input id="review-input" placeholder="感想">
+  <button type="submit">登録</button>
+</form>
+<p id="error"></p>
+```
+
+`<form>`の中で`type="submit"`のボタンが押されると、フォームは`submit`という種類のイベントを発生させます。コース5で学んだ`addEventListener`は、`"click"`以外の名前も受け取れます。
+
+<HtmlRunner
+  client:visible
+  storageKey="koubou-04-a"
+  height={140}
+  initialHtml={`<form id="demo-form">
+  <input id="name-input" placeholder="名前">
+  <button type="submit">送信</button>
+</form>
+<p id="result"></p>
+
+<script>
+  const form = document.querySelector('#demo-form');
+  const nameInput = document.querySelector('#name-input');
+  const result = document.querySelector('#result');
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    result.textContent = \`こんにちは、\${nameInput.value}さん\`;
+  });
+</script>`}
+/>
+
+`event.preventDefault()`という1行が、新しく出てきました。**フォームの送信には、ブラウザ標準の「既定の動作」があります。** 何も止めなければ、ブラウザはフォームの内容を今のページ自身に送信しようとし、結果としてページ全体が再読み込みされます。せっかく入力した値も、JavaScriptの状態も、すべて失われてしまいます。`event.preventDefault()`は、「この既定の動作を行わない」という指示です。フォームのsubmitイベントでは、ほぼ必ずこの1行とセットで使います。
+
+<Callout type="warn" title="つまずきポイント: preventDefaultを忘れると">
+`event.preventDefault()`を書き忘れると、`submit`イベントのリスナーの中身が実行された直後に、ブラウザがページを再読み込みしてしまいます。コンソールに出したはずのログも、書き換えたはずの画面も、一瞬で消えてしまう——「動いているはずなのに、何も起きていないように見える」という、原因が分かりにくいつまずき方をします。フォームを使うときは、まず`event.preventDefault()`を書く、と覚えておくと安全です。
+</Callout>
+
+## createBookと、try/catchで受け止める
+
+コース4の例外のレッスンで、`throw`されたエラーは`try`/`catch`で受け止められると学びました。フォームから受け取った値で`createBook`を呼び、失敗したら`error.message`を画面に表示します。
+
+```js nocheck
+formEl.addEventListener('submit', (event) => {
+  event.preventDefault();
+  errorEl.textContent = "";
+
+  try {
+    const book = createBook(
+      titleInput.value,
+      authorInput.value,
+      Number(ratingInput.value),
+      reviewInput.value
+    );
+    books = [...books, book];
+    saveBooks(books);
+    render(books);
+
+    titleInput.value = "";
+    authorInput.value = "";
+    ratingInput.value = "";
+    reviewInput.value = "";
+  } catch (error) {
+    errorEl.textContent = error.message;
+  }
+});
+```
+
+`input.value`は常に文字列なので(コース5の復習)、`rating`だけ`Number(...)`で数値に変換してから`createBook`に渡します。登録に成功したら、`books`をスプレッド構文で新しい配列にして(コース3の復習)、`saveBooks`で保存し、`render`で画面を描き直し、最後にフォームの入力欄を空文字に戻します。タイトルが空だったり評価が範囲外だったりすれば`createBook`が`Error`を投げ、`catch`がそれを受け止めて、エラーメッセージをそのまま`#error`に表示します。
+
+## 「状態を変えたら描き直す」という型
+
+ここまでの`render(books)`の呼び方をよく見ると、1つの型が見えてきます。**本の一覧(状態)が変わるたびに、`saveBooks`で保存し、`render`をもう一度呼んで画面全体を作り直す。** 一部分だけを書き換えようとはしません。
+
+この型のいいところは、「今どんな状態からでも、正しい画面になる」ことです。`render`は、渡された配列の中身だけを見て、それに合う画面を1から組み立てます。追加のときも、このあとの検索・削除のときも、同じ`render`をそのまま使い回せます。
+
+## 検索ボックスと、inputイベント
+
+検索欄には、`"click"`ではなく`"input"`というイベントを使います。`input`イベントは、値が変わるたびに——1文字打つたびに——発生します。
+
+```js nocheck
+function searchBooks(books, keyword) {
+  return books.filter(
+    (book) => book.title.includes(keyword) || book.author.includes(keyword)
+  );
+}
+
+searchInput.addEventListener('input', () => {
+  const keyword = searchInput.value;
+  render(keyword === "" ? books : searchBooks(books, keyword));
+});
+```
+
+`searchBooks`の中身は、コース4で学んだ`filter`そのものです。「タイトルか著者に、検索語を含む本だけを残す」という条件を、コールバック関数で渡しています。検索欄が空になったら、絞り込まずに`books`全部を`render`します。ここでも、渡した一覧を`render`するだけで済んでいることに注目してください。
+
+## 削除ボタンと、オブジェクトの見分け方
+
+1冊ごとの`<li>`に、削除ボタンを追加します。
+
+```js nocheck
+const deleteButton = document.createElement('button');
+deleteButton.textContent = "削除";
+deleteButton.addEventListener('click', () => {
+  books = books.filter((b) => b !== book);
+  saveBooks(books);
+  render(books);
+});
+```
+
+`books.filter((b) => b !== book)`の`book`は、forループの中でその`<li>`を作ったときの、まさにその1冊です。`createBook`で作った本は、たとえ中身がまったく同じ値でも、それぞれ別の実体(オブジェクト)です。`!==`は「同じ実体ではないものを残す」という意味なので、このボタンが押されたときの、まさにこの1冊だけが取り除かれます。IDのような番号を振らなくても、JavaScriptのオブジェクトはそれぞれ区別できる、という性質を利用しています。
+
+## hondana.jsを、まとめる
+
+```js title="hondana.js" nocheck
+import { loadBooks, saveBooks } from './storage.js';
+
+function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (rating < 1 || rating > 5) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  return { title, author, rating, review };
+}
+
+function searchBooks(books, keyword) {
+  return books.filter(
+    (book) => book.title.includes(keyword) || book.author.includes(keyword)
+  );
+}
+
+let books = loadBooks();
+
+const listEl = document.querySelector('#book-list');
+const formEl = document.querySelector('#add-form');
+const titleInput = document.querySelector('#title-input');
+const authorInput = document.querySelector('#author-input');
+const ratingInput = document.querySelector('#rating-input');
+const reviewInput = document.querySelector('#review-input');
+const errorEl = document.querySelector('#error');
+const searchInput = document.querySelector('#search-input');
+
+function render(list) {
+  listEl.textContent = "";
+
+  if (list.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = "まだ本が登録されていません。";
+    listEl.appendChild(empty);
+    return;
+  }
+
+  for (const book of list) {
+    const li = document.createElement('li');
+
+    const heading = document.createElement('strong');
+    heading.textContent = `${book.title} / ${book.author} (評価${book.rating})`;
+
+    const review = document.createElement('p');
+    review.textContent = book.review;
+
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = "削除";
+    deleteButton.addEventListener('click', () => {
+      books = books.filter((b) => b !== book);
+      saveBooks(books);
+      render(books);
+    });
+
+    li.appendChild(heading);
+    li.appendChild(review);
+    li.appendChild(deleteButton);
+    listEl.appendChild(li);
+  }
+}
+
+formEl.addEventListener('submit', (event) => {
+  event.preventDefault();
+  errorEl.textContent = "";
+
+  try {
+    const book = createBook(
+      titleInput.value,
+      authorInput.value,
+      Number(ratingInput.value),
+      reviewInput.value
+    );
+    books = [...books, book];
+    saveBooks(books);
+    render(books);
+
+    titleInput.value = "";
+    authorInput.value = "";
+    ratingInput.value = "";
+    reviewInput.value = "";
+  } catch (error) {
+    errorEl.textContent = error.message;
+  }
+});
+
+searchInput.addEventListener('input', () => {
+  const keyword = searchInput.value;
+  render(keyword === "" ? books : searchBooks(books, keyword));
+});
+
+render(books);
+```
+
+`index.html`も、フォームと検索欄を足した形にします。
+
+```html title="index.html"
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>hondana</title>
+</head>
+<body>
+  <h1>hondana</h1>
+
+  <form id="add-form">
+    <input id="title-input" placeholder="タイトル">
+    <input id="author-input" placeholder="著者">
+    <input id="rating-input" type="number" min="1" max="5" placeholder="評価(1〜5)">
+    <input id="review-input" placeholder="感想">
+    <button type="submit">登録</button>
+  </form>
+  <p id="error"></p>
+
+  <input id="search-input" type="search" placeholder="検索">
+
+  <ul id="book-list"></ul>
+
+  <script type="module" src="hondana.js"></script>
+</body>
+</html>
+```
+
+<Callout type="note" title="このファイルの検証について">
+`hondana.js`は`storage.js`と組み合わさってはじめて成立するので、CodeRunnerでは単体実行できません。実際に`hondana`フォルダの中に置いて、Node.js 22で構文を確認し、フォームの送信・検索・削除まで一通り動作を確認したものです。
+</Callout>
+
+もう2冊が固定で保存される`shelf`はなくなり、`books`は`loadBooks()`で読み込んだ、これまでに登録された記録から始まります。はじめて開いたときは0冊なので、「まだ本が登録されていません。」という空状態のメッセージから始まります。
+
+<Exercise title="演習1: 追加・検索・削除を、手元で動かす">
+
+ローカルサーバーで`index.html`を開き、フォームから2冊以上登録してください。検索欄にタイトルの一部を入れて絞り込まれることを確認し、削除ボタンでどちらか1冊を消して、一覧から消えることを確認してください。タイトルを空のまま登録しようとして、エラーメッセージが表示されることも確認してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+このレッスンの内容を、そのまま自分のブラウザで再現するだけです。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+タイトル・著者・評価・感想を入力して「登録」を押す、を2回繰り返してから、検索欄に文字を打ち、最後に削除ボタンを押します。
+</details>
+
+<details>
+<summary>こたえ</summary>
+特別な正解はありません。登録した本が一覧に増えること、検索欄への入力で絞り込まれること、削除ボタンでその1冊だけが消えること、タイトルが空だとエラーメッセージが出て登録されないことの4つが確認できていれば十分です。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 検索を、大文字小文字を区別しないようにする">
+
+いまの`searchBooks`は、`"Great"`で検索しても`"great"`というタイトルの本は見つかりません。大文字小文字を区別せずに検索できるよう、`searchBooks`を直してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+コース1で学んだ`toLowerCase()`を、比較する前の両方の文字列にかければ、大文字小文字の違いは消えます。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+function searchBooks(books, keyword) {
+  const lowerKeyword = keyword.toLowerCase();
+  return books.filter(
+    (book) =>
+      book.title.toLowerCase().includes(lowerKeyword) ||
+      book.author.toLowerCase().includes(lowerKeyword)
+  );
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+上のヒント2がそのままの実装です。`keyword`側と、比較する`title`・`author`側の両方を`toLowerCase()`してから`includes`することで、大文字小文字の違いを無視した検索になります。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: preventDefaultを外して、何が起きるか確かめる">
+
+`formEl`の`submit`イベントリスナーから、`event.preventDefault();`の行を一時的に削除してください。フォームに入力して「登録」を押すと何が起きるか確認したら、必ず元に戻してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+このレッスンの「フォームを送信するイベントを受け取る」の節で説明した、フォーム送信の既定の動作を、自分の手で確かめる演習です。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+削除したら、ローカルサーバーで開いたページでフォームに入力し、「登録」ボタンを押してみます。
+</details>
+
+<details>
+<summary>こたえ</summary>
+「登録」ボタンを押した瞬間、ページが再読み込みされます。せっかく登録された本は`localStorage`に保存されているので消えませんが(次のレッスンでも触れます)、入力欄はすべて空に戻り、あなたが書いたJavaScriptのコードが最初から実行し直されます。`event.preventDefault()`がないと、フォームは「このページ自身に、今の入力内容を送信する」というブラウザ標準の動作を止められないからです。確認できたら、`event.preventDefault();`を元に戻してください。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- フォームの`submit`イベントは、`event.preventDefault()`で既定の再読み込みを止めてから扱う
+- `throw`されたエラーは、`try`/`catch`で受け止めて、`error.message`を画面に表示できる
+- 「状態(books)が変わったら、保存してrenderをもう一度呼ぶ」——この型を、追加・検索・削除のすべてで使い回す
+- 検索欄には`"input"`イベントを使う。値が変わるたびに(1文字ごとに)発生する
+- オブジェクトは、中身が同じでもそれぞれ別の実体。`!==`で「これではないもの」を選び出せる
+
+<Quiz
+  client:visible
+  storageKey="koubou-04"
+  questions={[
+    {
+      q: 'フォームのsubmitイベントで event.preventDefault() を呼ばないとどうなる?',
+      choices: [
+        '何も変わらない。preventDefaultは省略可能な飾りだから',
+        'ブラウザの既定の動作でページが再読み込みされ、JavaScriptの状態や入力内容が失われる',
+        'フォームの送信自体ができなくなる',
+      ],
+      answer: 1,
+      explain: 'フォーム送信には既定の動作(ページの再読み込み)があり、preventDefaultで止めないと画面の状態が失われます。',
+    },
+    {
+      q: '検索欄への入力に反応するために使うイベント名は?',
+      choices: ['"click"', '"input"', '"submit"'],
+      answer: 1,
+      explain: '"input"イベントは、値が変わるたびに(1文字打つたびに)発生します。',
+    },
+    {
+      q: '削除ボタンのイベントリスナーの中で books.filter((b) => b !== book) が、指定した1冊だけを正しく取り除ける理由は?',
+      choices: [
+        'IDという番号をあらかじめ振っているから',
+        'createBookで作られた本はそれぞれ別の実体(オブジェクト)であり、!==で見分けられるから',
+        'タイトルの文字列が完全に一致するものだけを比較しているから',
+      ],
+      answer: 1,
+      explain: 'JavaScriptのオブジェクトは、中身が同じでもそれぞれ別の実体として区別されます。IDを振らなくても、!==で「これではないもの」を選べます。',
+    },
+  ]}
+/>

@@ -1,0 +1,359 @@
+---
+title: くりかえす（while）
+course: nagare
+order: 3
+description: 条件がtrueのあいだ処理をくりかえすwhile文を学びます。止まらなくなる無限ループの怖さと、CodeRunnerがそれをどう守ってくれるかも、実際に手を動かして体験します。
+seed: くりかえしの型が1つ増えました。次は、回数を数えながらくりかえす、forです。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 同じ処理を、くりかえす
+
+ここまでの`if`は、1回だけの分かれ道でした。でも「提灯を、ぜんぶ灯し終わるまでくりかえす」「屋台をひとつずつ見て回る」のように、同じ処理を何度もくりかえしたい場面があります。そのための文が`while`です。
+
+## while文の基本
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-a"
+  initialCode={`let count = 0;
+const total = 5;
+
+while (count < total) {
+  count = count + 1;
+  console.log(\`\${count}個目の提灯をつけました\`);
+}
+
+console.log(\`全部で\${count}個の提灯がつきました\`);`}
+/>
+
+```console
+1個目の提灯をつけました
+2個目の提灯をつけました
+3個目の提灯をつけました
+4個目の提灯をつけました
+5個目の提灯をつけました
+全部で5個の提灯がつきました
+```
+
+`while (条件) { ... }`は、「条件が`true`である間、`{ }`の中をくりかえす」という意味です。1回実行するたびに条件が調べ直され、`false`になった瞬間にループを抜けます。ここでは`count`が`0`から`1`ずつ増えていき、`5`に達すると`count < total`が`false`になって止まります。
+
+`count = count + 1;`のように、`while`の中で条件に関わる変数を更新するのを忘れると、条件はいつまでも`true`のままです。次は、そのことを実際に確かめてみましょう。
+
+## 無限ループ——止まらないくりかえし
+
+条件がずっと`true`のままだと、`while`は永遠に終わりません。これを**無限ループ**と呼びます。次のコードは、わざと無限ループにしてあります。実行してみてください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-b"
+  nocheck
+  initialCode={`let i = 0;
+
+while (true) {
+  i = i + 1;
+}
+
+console.log(i);`}
+/>
+
+`while (true)`は、条件がいつも`true`なので、中の`{ }`が永遠にくりかえされます。`i`を増やすだけで、抜け出す手立てがどこにもありません。普通なら、これはブラウザやプログラムを固まらせてしまう危険なコードです。
+
+でも、このサイトのCodeRunnerには、一定時間で実行を強制的に打ち切る保護がついています。実行するとしばらくは何も起きたように見えませんが、時間が経つと、実行がタイムアウトしたことを知らせる表示に切り替わるはずです。ブラウザがフリーズすることはありません。安心して試してみてください。
+
+<Callout type="warn" title="つまずきポイント：条件を更新し忘れる">
+`while`を書くときは、いつか条件が`false`になる道筋が本当にあるかを、書きながら確認してください。「ループの中で、条件に関わる変数がちゃんと変化しているか」——これがいちばん見落としやすいポイントです。CodeRunnerの外、実際のブラウザやNode.jsで無限ループを実行すると、タイムアウト保護なしに本当に固まってしまいます。
+</Callout>
+
+## break——ループを抜ける
+
+条件を待たずに、途中でループを強制的に終わらせたいこともあります。そんなときは`break`です。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-c"
+  initialCode={`let num = 1;
+
+while (true) {
+  if (num % 7 === 0) {
+    console.log(\`\${num}は最初に見つかった7の倍数です\`);
+    break;
+  }
+  num = num + 1;
+}`}
+/>
+
+```console
+7は最初に見つかった7の倍数です
+```
+
+`while (true)`なので条件だけを見ると無限ループですが、中の`if`が`7の倍数`を見つけた瞬間に`break`が実行され、そこでループ全体を抜けます。「終わる条件が単純には書けないけれど、途中で見つかったら抜けたい」という場面で使う書き方です。
+
+## continue——その回だけ飛ばす
+
+ループ全体は続けたいけれど、特定の回だけ処理を飛ばしたいときは`continue`です。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-d"
+  initialCode={`let bangou = 0;
+
+while (bangou < 10) {
+  bangou = bangou + 1;
+
+  if (bangou === 6) {
+    continue;
+  }
+
+  console.log(\`\${bangou}番の屋台、営業中です\`);
+}`}
+/>
+
+```console
+1番の屋台、営業中です
+2番の屋台、営業中です
+3番の屋台、営業中です
+4番の屋台、営業中です
+5番の屋台、営業中です
+7番の屋台、営業中です
+8番の屋台、営業中です
+9番の屋台、営業中です
+10番の屋台、営業中です
+```
+
+`bangou`が`6`のとき、`continue`が実行されて、その回の`console.log`はスキップされます。でもループ自体は終わらず、次の`bangou = 7`からくりかえしが続きます。`break`は「ループごと抜ける」、`continue`は「今回だけ飛ばして続ける」——似ていますが働きが違います。
+
+<Exercise title="演習1: 1からnまでの合計">
+
+`n`という数値の変数（`5`）を用意し、`while`を使って`1`から`n`までの合計を求めて表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-ex1"
+  initialCode={`// ここに書いてみましょう
+const n = 5;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+合計を入れておく変数（`0`から始める）と、数え上げる変数（`1`から始める）の2つを用意します。数え上げる変数が`n`を超えるまでくりかえします。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const n = 5;
+let goukei = 0;
+let i = 1;
+
+while (i <= n) {
+  goukei = goukei + i;
+  i = i + 1;
+}
+
+console.log(goukei);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+const n = 5;
+let goukei = 0;
+let i = 1;
+
+while (i <= n) {
+  goukei = goukei + i;
+  i = i + 1;
+}
+
+console.log(`1から${n}までの合計は${goukei}です`);
+```
+
+```console
+1から5までの合計は15です
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 在庫が3個になったら早めに終了">
+
+`zaiko`という数値の変数（`10`）を用意します。`while`で1個ずつ減らしながら`残り○個です`と表示し、`3`になったら`そろそろ終了です`と表示して`break`してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-ex2"
+  initialCode={`// ここに書いてみましょう
+let zaiko = 10;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`while (zaiko > 0)`でくりかえし、毎回`zaiko`を1減らします。減らしたあとに`zaiko === 3`かどうかを`if`で調べ、`true`なら`break`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let zaiko = 10;
+
+while (zaiko > 0) {
+  zaiko = zaiko - 1;
+  console.log("...");
+
+  if (zaiko === 3) {
+    console.log("...");
+    break;
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+let zaiko = 10;
+
+while (zaiko > 0) {
+  zaiko = zaiko - 1;
+  console.log(`残り${zaiko}個です`);
+
+  if (zaiko === 3) {
+    console.log("そろそろ終了です");
+    break;
+  }
+}
+```
+
+```console
+残り9個です
+残り8個です
+残り7個です
+残り6個です
+残り5個です
+残り4個です
+残り3個です
+そろそろ終了です
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: continueで奇数だけ表示">
+
+`num`を`0`から始めて`10`になるまでくりかえし、偶数のときは`continue`で飛ばして、奇数だけを表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-03-ex3"
+  initialCode={`// ここに書いてみましょう
+let num = 0;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`num % 2 === 0`が`true`なら偶数です。偶数のときだけ`continue`すれば、残るのは奇数を表示する処理だけになります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let num = 0;
+
+while (num < 10) {
+  num = num + 1;
+
+  if (num % 2 === 0) {
+    continue;
+  }
+
+  console.log(num);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+let num = 0;
+
+while (num < 10) {
+  num = num + 1;
+
+  if (num % 2 === 0) {
+    continue;
+  }
+
+  console.log(num);
+}
+```
+
+```console
+1
+3
+5
+7
+9
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `while (条件) { ... }`は、条件が`true`である間`{ }`の中をくりかえす
+- 条件がずっと`true`のままだと無限ループになる。ループの中で条件に関わる変数を更新しているか、書きながら確認する
+- CodeRunnerには実行時間の上限があり、無限ループを実行してもタイムアウトで安全に止まる。ただし実際のブラウザやNode.jsではこの保護はない
+- `break`はループごと抜ける、`continue`はその回だけ飛ばして続ける
+
+<Quiz
+  client:visible
+  storageKey="nagare-03"
+  questions={[
+    {
+      q: 'while (条件) { ... } の動きとして正しいのは？',
+      choices: ['条件に関係なく1回だけ実行する', '条件がtrueである間、{ }の中をくりかえす', '条件がfalseである間だけくりかえす'],
+      answer: 1,
+      explain: 'whileは条件がtrueの間だけ{ }の中をくりかえします。条件がfalseになった瞬間にループを抜けます。',
+    },
+    {
+      q: 'ループの中で、条件に関わる変数を更新し忘れるとどうなる？',
+      choices: ['自動的にエラーになって止まる', '無限ループになる可能性がある', '1回も実行されなくなる'],
+      answer: 1,
+      explain: '条件がいつまでもtrueのままだと、ループは終わらず無限ループになります。',
+    },
+    {
+      q: 'breakとcontinueの違いとして正しいのは？',
+      choices: ['どちらもループごと抜ける', 'breakはループごと抜け、continueはその回だけ飛ばして続ける', 'breakはその回だけ飛ばし、continueはループごと抜ける'],
+      answer: 1,
+      explain: 'breakはループ全体を終わらせ、continueはその回の残りの処理だけを飛ばして次の回に進みます。',
+    },
+  ]}
+/>

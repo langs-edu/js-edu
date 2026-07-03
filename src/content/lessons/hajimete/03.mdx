@@ -1,0 +1,210 @@
+---
+title: 変数——letとconst
+course: hajimete
+order: 3
+description: 値に名前をつけて取っておく、変数に出会います。JavaScriptの現代的な流儀にならって、基本はconst、付け替えたいときだけletを使います。再代入のエラーも実物で確かめます。
+seed: "名前がついた値には、種類があります。数、文字、真偽——JavaScriptの型に出会いましょう"
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 値に、名前をつける
+
+前回まで、`console.log("りんご飴")`のように、値をその場で直接書いてきました。でも、同じ値を何度も使いたくなったら、そのたびに書き直すのは面倒です。値に**名前**をつけて取っておければ、あとから何度でもその名前で呼び出せます。
+
+<CodeRunner client:visible storageKey="hajimete-03-a" initialCode={`const yatai = "りんご飴";
+console.log(yatai);`} />
+
+`const yatai = "りんご飴";`という1行が、`"りんご飴"`という値に`yatai`という名前をつけています。これを**変数の宣言**と呼びます。次の行では、`yatai`という名前を書くだけで、さっき取っておいた値を呼び出せています。
+
+**変数とは、値につけた名前です。** 「値を箱に入れる」という説明を見かけることがありますが、この縁日ではその言い方をしません。この先、1つの値に2つ以上の名前がつく場面も出てきます。名前は、あだ名のように、いくつあっても不思議ではありません。
+
+## constが基本、letは付け替えたいときだけ
+
+`const`は「constant（定数）」の略で、**一度つけた名前には、二度と別の値を代入し直さない**という宣言です。このサイトでは、`const`を基本の書き方とします。値が変わらないと分かっているなら、そう宣言しておいたほうが、あとでコードを読む人（未来のあなた自身も含みます）にとって親切だからです。
+
+一方で、名前を使い回して値を付け替えたい場面もあります。そのときは`let`を使います。
+
+<CodeRunner client:visible storageKey="hajimete-03-b" initialCode={`let kingyo = 3;
+console.log(kingyo);
+kingyo = 5;
+console.log(kingyo);`} />
+
+`let kingyo = 3;`で名前をつけたあと、`kingyo = 5;`のように、`let`をつけずに名前だけ書いて別の値を代入し直しています。これを**再代入**と呼びます。出力欄には、`3`のあとに`5`が表示されます。同じ`kingyo`という名前が、途中から違う値を指すようになったわけです。
+
+## constに再代入すると、どうなるか
+
+`const`で宣言した名前に、同じように再代入しようとすると何が起きるでしょうか。試してみましょう。このコードは、実行するとエラーで止まる例です。
+
+<CodeRunner client:visible storageKey="hajimete-03-c" expectError initialCode={`const kingyo = 3;
+kingyo = 5;`} />
+
+実行すると、次のようなメッセージが表示されます。
+
+```console
+TypeError: Assignment to constant variable.
+```
+
+「定数変数への代入です」——`const`で宣言した名前には、二度と代入できないという約束を破ろうとしたことを、JavaScriptがその場で教えてくれています。これは、このサイトで初めて出会う本物のエラーです。エラーが出ること自体は失敗ではありません。**「今、何をしようとして、なぜ止まったのか」を読み取れれば、それで十分です。** エラーの種類ごとの詳しい読み方は、コースの後半（レッスン7）でまとめて扱います。
+
+<Callout type="note" title="迷ったらconst">
+「これから値を変えるかもしれない」と少しでも迷ったときは、いったん`const`で書いてみてください。実際にコードを書き進めていく中で、「やっぱり再代入したい」と分かった時点で`let`に書き換えれば十分です。最初から`let`を使いすぎると、どの変数が本当に変わる予定なのか、コードを読むだけでは分かりにくくなります。
+</Callout>
+
+## 名前のつけ方——camelCase
+
+変数名は、日本語ではなくローマ字か英単語で、しかも自由な文字列というわけではありません。数字から始めることはできず、スペースも使えません。複数の単語からなる名前をつけるときは、2つ目以降の単語の先頭を大文字にしてつなげます。これを**camelCase**（キャメルケース）と呼びます。
+
+<CodeRunner client:visible storageKey="hajimete-03-d" initialCode={`const uriageKingaku = 500;
+console.log(uriageKingaku);`} />
+
+`uriageKingaku`のように、単語の境目が大文字になっている見た目が、こぶが並んだラクダ（camel）に似ていることからこの名前がついています。JavaScriptの変数名は、このcamelCaseで書くのが主流です。
+
+<Exercise title="演習1: constで屋台の情報を変数にする">
+
+`const`を使って、好きな屋台の名前を1つの変数に、その値段を別の変数に入れ、それぞれ`console.log`で出力してください。
+
+<CodeRunner client:visible storageKey="hajimete-03-e" initialCode={`// ここに const を使った変数の宣言と、console.log を書いてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスン冒頭の`yatai`の例と同じ形です。名前（文字列）と値段（数値）で、2つの変数を用意します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`const 名前 = "文字列";`と`const 値段 = 数値;`を書き、それぞれを`console.log(名前)`のように出力します。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const yatai = "たこ焼き";
+const nedan = 400;
+console.log(yatai);
+console.log(nedan);
+```
+
+変数名や値があなたのものと違っていても、`const`で宣言できていれば正解です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: letで値を書き換える">
+
+`let`を使って数値の変数を1つ作り、`console.log`で出力したあと、別の値に再代入して、もう一度`console.log`で出力してください。
+
+<CodeRunner client:visible storageKey="hajimete-03-f" initialCode={`// ここに let を使った変数の宣言と、再代入、2回の console.log を書いてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`kingyo`の例をそのまま真似してみてください。`let`で宣言、出力、再代入、また出力、という4行の流れです。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`let kazu = 数値;` → `console.log(kazu);` → `kazu = 別の数値;` → `console.log(kazu);`の順です。2回目の代入には`let`をつけません。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+let kazu = 10;
+console.log(kazu);
+kazu = 3;
+console.log(kazu);
+```
+
+1回目は`10`、2回目は`3`が出力されれば成功です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: わざとエラーを起こしてみる">
+
+`const`で宣言した変数に再代入しようとして、あえてエラーを起こしてください。表示されたエラーメッセージが、このレッスンで見たものと同じかどうか確かめてください。
+
+<CodeRunner client:visible storageKey="hajimete-03-g" initialCode={`// const で変数を宣言してから、再代入してエラーを起こしてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`kingyo`のエラー例を、自分の変数名で再現するだけです。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`const 名前 = 値;`のあと、`名前 = 別の値;`と書きます。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js expect-error
+const nedan = 300;
+nedan = 400;
+```
+
+`TypeError: Assignment to constant variable.`というメッセージが表示されれば成功です。壊れたわけではありません。「これは再代入できない約束の変数だ」と、JavaScriptがその場で教えてくれています。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 変数は、**値につけた名前**。`const 名前 = 値;`や`let 名前 = 値;`で宣言する
+- 基本は`const`。値を付け替えたいときだけ`let`を使う
+- `const`で宣言した名前に再代入しようとすると、`TypeError: Assignment to constant variable.`というエラーになる
+- 変数名は数字から始められず、複数単語はcamelCase（`uriageKingaku`のように）でつなげる
+
+<Quiz
+  client:visible
+  storageKey="hajimete-03"
+  questions={[
+    {
+      q: 'このサイトで基本の書き方として勧めているのはどちら？',
+      choices: ['let', 'const', 'どちらも同じくらい使う'],
+      answer: 1,
+      explain: '値が変わらないと分かっているなら const と宣言しておくのが基本です。付け替えたいときだけ let を使います。',
+    },
+    {
+      q: '`const kazu = 1;`のあと`kazu = 2;`と書くとどうなる？',
+      choices: [
+        '問題なく再代入できる',
+        'TypeError: Assignment to constant variable. というエラーになる',
+        '何も起きず、kazuは1のままになる',
+      ],
+      answer: 1,
+      explain: 'constで宣言した名前には再代入できず、実行時にTypeErrorになります。',
+    },
+    {
+      q: '`uriage_kingaku`のような書き方に対して、JavaScriptの変数名として主流なのはどれ？',
+      choices: ['uriageKingaku（camelCase）', 'UriageKingaku（先頭も大文字）', 'そのままの書き方が主流'],
+      answer: 0,
+      explain: '複数単語をつなげるときは、2つ目以降の単語の先頭を大文字にするcamelCaseが主流です。',
+    },
+  ]}
+/>

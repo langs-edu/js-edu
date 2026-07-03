@@ -1,0 +1,211 @@
+---
+title: 文字列とテンプレートリテラル
+course: hajimete
+order: 5
+description: "+での文字列連結から、値を埋め込めるテンプレートリテラル`${}`へ。lengthや、toUpperCase・includes・trim・replaceAllといった文字列のメソッドにも出会います。"
+seed: "プログラムはまだ一方通行。あなたの操作に応えるには——まず「読み手からの返事」の読み方から"
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 文字列を、+でつなげる
+
+前回、`typeof`で`string`という型に出会いました。文字列は、`+`演算子でつなげられます。
+
+<CodeRunner client:visible storageKey="hajimete-05-a" initialCode={`const na = "りんご飴";
+console.log("いらっしゃい、" + na + "はいかがですか");`} />
+
+`"いらっしゃい、"`と変数`na`の中身、`"はいかがですか"`が、`+`で1つの文字列につながっています。動きはしますが、`+`とクォートが何度も出てきて、少し読みにくくもあります。特に、つなげる値が増えるほど、`+`の数も増えていきます。
+
+## テンプレートリテラル——値を、そのまま埋め込む
+
+JavaScriptには、文字列の中に直接変数の値を埋め込める書き方があります。**テンプレートリテラル**と呼ばれる書き方で、ダブルクォートの代わりにバッククォート（`` ` ``）で文字列を囲み、埋め込みたい場所に`${ }`を書きます。
+
+<CodeRunner client:visible storageKey="hajimete-05-b" initialCode={`const na = "りんご飴";
+const nedan = 300;
+console.log(\`いらっしゃい、\${na}は\${nedan}円です\`);`} />
+
+`${na}`と書いた場所に、変数`na`の中身がそのまま差し込まれます。`+`を1つも使わずに、`いらっしゃい、りんご飴は300円です`という文字列が出来上がります。値が増えても、`${ }`を増やすだけで済み、`+`でつなぐより読みやすくなることがほとんどです。このコースでは、これ以降、文字列に値を埋め込むときはテンプレートリテラルを主役として使っていきます。
+
+<Callout type="warn" title="つまずきポイント：バッククォートとシングルクォートは別物">
+テンプレートリテラルで使うバッククォート（`` ` ``）は、キーボードの左上あたりにあることが多い記号です。文字列でよく使うシングルクォート（`'`）やダブルクォート（`"`）とは見た目も役割も違います。`${ }`による埋め込みは、バッククォートで囲んだときにしか使えません。`"文字列${na}"`のようにダブルクォートの中に書いても、`${na}`はただの文字としてそのまま出力されてしまいます。
+</Callout>
+
+## length——文字列の長さ
+
+文字列には、いくつかの便利な**プロパティ**や**メソッド**が備わっています。まずは`length`というプロパティです。
+
+<CodeRunner client:visible storageKey="hajimete-05-c" initialCode={`const yomise = "金魚すくい";
+console.log(yomise.length);`} />
+
+`yomise.length`は、「`yomise`という文字列の、`length`という値」を意味します。「金魚すくい」は5文字なので、`5`が出力されます。丸かっこがついていないことに気づいたでしょうか。`length`は呼び出す動作ではなく、文字列がすでに持っている値そのものです。
+
+## 文字列のメソッドたち
+
+一方、`.trim()`のように丸かっこがつくものは**メソッド**と呼ばれ、文字列に対して何らかの処理をして、結果を返します。よく使う4つを見てみましょう。
+
+<CodeRunner client:visible storageKey="hajimete-05-d" initialCode={`const kotoba = "  yatai  ";
+console.log(kotoba.trim());
+console.log(kotoba.trim().toUpperCase());
+console.log(kotoba.includes("atai"));
+console.log("ラムネ、ラムネ、ラムネ".replaceAll("ラムネ", "かき氷"));`} />
+
+- `.trim()` — 前後の余分な空白を取り除いた文字列を返します
+- `.toUpperCase()` — アルファベットをすべて大文字にした文字列を返します
+- `.includes("atai")` — 指定した文字列が含まれているかどうかを、`true`か`false`で返します
+- `.replaceAll(旧, 新)` — 文字列の中の`旧`をすべて`新`に置き換えた文字列を返します
+
+`kotoba.trim().toUpperCase()`のように、メソッドを`.`で続けてつなげることもできます。「`trim()`した結果に、さらに`toUpperCase()`をする」という流れです。
+
+## 文字列は、書き換えられない
+
+ここで大事な性質を1つ確認しておきます。文字列のメソッドは、**元の文字列そのものを書き換えるのではなく、新しい文字列を作って返しています。**
+
+<CodeRunner client:visible storageKey="hajimete-05-e" initialCode={`const kotoba2 = "yatai";
+console.log(kotoba2.toUpperCase());
+console.log(kotoba2);`} />
+
+`kotoba2.toUpperCase()`の結果は`YATAI`ですが、そのあとに`kotoba2`をそのまま出力すると、`yatai`のままです。`toUpperCase()`は`kotoba2`の中身を書き換えたのではなく、大文字にした**新しい文字列を作って返しただけ**でした。この性質を**不変（イミュータブル）**と呼びます。もし大文字にした結果をあとで使いたいなら、`const oukun = kotoba2.toUpperCase();`のように、返ってきた値を別の名前で受け取っておく必要があります。
+
+<Exercise title="演習1: テンプレートリテラルで自己紹介文を作る">
+
+`namae`と`suki`という2つの変数を`const`で作り、テンプレートリテラルを使って「〇〇は、△△が好きです」のような1文を`console.log`してください。
+
+<CodeRunner client:visible storageKey="hajimete-05-f" initialCode={`// const namae = ...; const suki = ...; のあと、テンプレートリテラルで文を組み立ててみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`na`と`nedan`の例と同じ形です。`${ }`の中に変数名を書けば、その値がそのまま文の中に差し込まれます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`` console.log(`${namae}は、${suki}が好きです`); ``のように書きます。バッククォートで文字列全体を囲むのを忘れないでください。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const namae = "ここね";
+const suki = "ラムネ";
+console.log(`ウチは${namae}。好きな屋台は${suki}です。`);
+```
+
+変数の中身や文の形はあなたの自由です。`${ }`の中に変数名を書けていれば正解です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 文字列メソッドを組み合わせる">
+
+前後に空白のついた文字列の変数を1つ作り、`.trim()`で空白を取り除いたあと、`.toUpperCase()`で大文字にし、さらに`.includes(...)`で好きな文字が含まれているか確認してください。
+
+<CodeRunner client:visible storageKey="hajimete-05-g" initialCode={`// 前後に空白のある文字列を作って、trim・toUpperCase・includes を試してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`kotoba`の例をそのまま真似してみてください。3つのメソッドを、それぞれ別の行で試すだけでも構いません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`kotoba.trim()`、`kotoba.trim().toUpperCase()`、`kotoba.includes("...")`を、それぞれ`console.log`で出力します。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const kotoba = "   Ennichi   ";
+console.log(kotoba.trim());
+console.log(kotoba.trim().toUpperCase());
+console.log(kotoba.includes("nnich"));
+```
+
+`Ennichi`・`ENNICHI`・`true`の順に出力されれば成功です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: replaceAllで言葉を置き換える">
+
+同じ単語を3回含む文字列を1つ作り、`.replaceAll(...)`でその単語を別の単語にすべて置き換えて出力してください。
+
+<CodeRunner client:visible storageKey="hajimete-05-h" initialCode={`// 同じ単語を含む文字列を作って、replaceAll で置き換えてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの「ラムネ」を「かき氷」に置き換えた例と同じ形です。旧・新それぞれの言葉を`replaceAll`の丸かっこに渡します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`"元の文字列".replaceAll("置き換えたい言葉", "新しい言葉")`という形です。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const bun = "たこ焼き、たこ焼き、いかがですか";
+console.log(bun.replaceAll("たこ焼き", "やきそば"));
+```
+
+`やきそば、やきそば、いかがですか`と出力されれば成功です。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 文字列は`+`でつなげられるが、**テンプレートリテラル**（バッククォート＋`${ }`）のほうが読みやすいことが多い
+- `length`は文字列の長さを表すプロパティ、`.trim()`・`.toUpperCase()`・`.includes()`・`.replaceAll()`はよく使うメソッド
+- 文字列のメソッドは、元の文字列を書き換えるのではなく、新しい文字列を作って返す（不変）
+
+<Quiz
+  client:visible
+  storageKey="hajimete-05"
+  questions={[
+    {
+      q: '`${ }`を使った値の埋め込みができるのはどれ？',
+      choices: ['ダブルクォートで囲んだ文字列', 'バッククォートで囲んだ文字列（テンプレートリテラル）', 'シングルクォートで囲んだ文字列'],
+      answer: 1,
+      explain: '${ }による値の埋め込みは、バッククォートで囲んだテンプレートリテラルでのみ有効です。',
+    },
+    {
+      q: '`const a = "yatai"; a.toUpperCase();`のあと、`a`の中身はどうなる？',
+      choices: ['"YATAI"に書き換わる', '"yatai"のまま変わらない', 'エラーになる'],
+      answer: 1,
+      explain: '文字列のメソッドは新しい文字列を返すだけで、元の文字列を書き換えません。この性質を不変と呼びます。',
+    },
+    {
+      q: '`"金魚すくい".length`の結果は？',
+      choices: ['4', '5', '6'],
+      answer: 1,
+      explain: '「金魚すくい」は5文字なので、lengthは5になります。',
+    },
+  ]}
+/>

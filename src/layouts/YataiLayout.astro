@@ -1,0 +1,172 @@
+---
+import { withBase } from '../utils/url';
+import BaseLayout from './BaseLayout.astro';
+
+interface YataiRef {
+  slug: string;
+  title: string;
+}
+
+interface RelatedLink {
+  href: string;
+  label: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  prev?: YataiRef;
+  next?: YataiRef;
+  relatedLessons?: RelatedLink[];
+}
+
+const { title, description, prev, next, relatedLessons = [] } = Astro.props;
+
+const yataiHref = withBase('/yatai/');
+const yataiRefHref = (m: YataiRef) => withBase(`/yatai/${m.slug}/`);
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="container">
+    <article class="yatai-article prose">
+      <nav class="yatai-breadcrumb" aria-label="パンくず">
+        <a href={yataiHref}>🏮 屋台のこぼれ話</a>
+      </nav>
+      <h1>{title}</h1>
+
+      <div class="yatai-body">
+        <slot />
+      </div>
+
+      {
+        relatedLessons.length > 0 && (
+          <aside class="yatai-related">
+            <p class="yatai-related-label">関連するレッスン</p>
+            <ul>
+              {relatedLessons.map((l) => (
+                <li>
+                  <a href={l.href}>{l.label}</a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )
+      }
+
+      <nav class="yatai-pager" aria-label="前後のコラム">
+        {
+          prev ? (
+            <a class="pager-link pager-prev" href={yataiRefHref(prev)}>
+              <span class="pager-dir">← まえの屋台</span>
+              {prev.title}
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          next ? (
+            <a class="pager-link pager-next" href={yataiRefHref(next)}>
+              <span class="pager-dir">つぎの屋台 →</span>
+              {next.title}
+            </a>
+          ) : (
+            <span />
+          )
+        }
+      </nav>
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .yatai-article {
+    padding-block: var(--space-6);
+  }
+
+  .yatai-breadcrumb {
+    font-size: 0.85rem;
+    margin-bottom: var(--space-3);
+  }
+
+  .yatai-breadcrumb a {
+    color: var(--c-kon);
+    text-decoration: none;
+  }
+
+  .yatai-article h1 {
+    margin-block: var(--space-2) var(--space-4);
+  }
+
+  .yatai-body {
+    line-height: 2.05;
+    color: var(--c-ink);
+  }
+
+  .yatai-body :global(h2) {
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-2);
+  }
+
+  .yatai-body :global(p) {
+    color: var(--c-ink);
+  }
+
+  .yatai-related {
+    margin-top: var(--space-6);
+    padding: var(--space-4);
+    border: 1px solid var(--c-line-strong);
+    border-radius: var(--radius-md);
+    background: var(--c-paper-2);
+  }
+
+  .yatai-related-label {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: var(--tracking-wide);
+    color: var(--c-kon);
+    margin: 0 0 var(--space-2);
+  }
+
+  .yatai-related ul {
+    margin: 0;
+    padding-left: 1.2em;
+    line-height: 1.9;
+  }
+
+  .yatai-pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--c-line);
+  }
+
+  .pager-link {
+    display: block;
+    text-decoration: none;
+    color: var(--c-ink);
+    border: 1px solid var(--c-line-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    transition: border-color var(--dur-fast) ease;
+  }
+
+  .pager-link:hover {
+    border-color: var(--c-kon);
+  }
+
+  .pager-next {
+    text-align: right;
+  }
+
+  .pager-dir {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--c-ink-3);
+    margin-bottom: 0.2em;
+  }
+</style>

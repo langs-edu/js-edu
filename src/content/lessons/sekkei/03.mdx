@@ -1,0 +1,328 @@
+---
+title: コールバック——関数を渡す
+course: sekkei
+order: 3
+description: 「あとで呼んでもらう関数」としてのコールバックを、自作のrepeat(n, fn)とforEachItemで体感します。setTimeoutで「あとで実行される」を軽く覗き、関数を渡すつもりが呼び出してしまう定番の間違いも見ます。
+seed: 自分で「渡した関数を呼んでくれる」関数を作れるようになりました。この形は、JavaScriptの配列にもとから備わっています。次は、配列の道具箱——map・filter・findです。
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 呼んでもらうために、渡す
+
+前回までで、関数を他の関数の引数として渡せることを見てきました。ここまでの`operate`は、渡した関数をその場ですぐに呼び出していました。でも、渡した関数がいつ呼ばれるかは、渡した側が自由に決めてよいことです。「今すぐ」でも構いませんし、「くり返しの中で、そのつど」でも、「ずっとあとで」でも構いません。
+
+**あとで呼んでもらうために渡す関数**のことを、**コールバック**と呼びます。「呼び返される関数」という意味です。
+
+## 自分のrepeatを作る
+
+`n`回だけ、渡された関数を呼び出す`repeat`という関数を作ってみます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-a"
+  initialCode={`function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+repeat(3, (i) => console.log(\`\${i}回目\`));`}
+/>
+
+`repeat`自身は、「`n`回くり返して、そのたびに`fn(i)`を呼ぶ」というくり返しの骨組みしか知りません。「呼ばれたときに何をするか」は、まったく知りません。それを決めるのは、呼び出す側が渡すコールバック——ここでは`i`から`${i}回目`という文字列を作って表示するアロー関数——の役目です。骨組みと中身が分かれているのが、コールバックの便利なところです。
+
+## 配列を歩く、自分のforEachItemを作る
+
+同じ考え方で、配列を歩く関数も自作できます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-b"
+  initialCode={`function forEachItem(items, callback) {
+  for (const item of items) {
+    callback(item);
+  }
+}
+
+const yatai = ["りんご飴", "金魚すくい", "ラムネ"];
+forEachItem(yatai, (item) => console.log(\`\${item}が並んでいます\`));`}
+/>
+
+`forEachItem`は、配列`items`をfor-ofで歩きながら、要素ひとつひとつを`callback`に渡して呼び出しています。「どう歩くか」は`forEachItem`が決め、「歩きながら何をするか」はコールバックが決める——`repeat`とまったく同じ形です。この形、次のレッスンでもう一度出会います。
+
+## setTimeoutで、「あとで」を覗く
+
+コールバックは、「今すぐ」だけでなく「あとで」呼ぶためにも使えます。ブラウザにもNode.jsにも、指定した時間が経ってからコールバックを呼び出す`setTimeout(fn, ミリ秒)`という関数が最初から用意されています。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-c"
+  initialCode={`console.log("最初");
+
+setTimeout(() => {
+  console.log("あとで");
+}, 0);
+
+console.log("次");`}
+/>
+
+実行すると、`最初` → `次` → `あとで`の順に表示されます。`setTimeout`に`0`ミリ秒を指定していても、`あとで`が最後になることに注目してください。`setTimeout`は「今すぐ実行する」のではなく、「今書かれている処理がひと通り終わったあとで、コールバックを呼ぶ」という予約をする関数だからです。
+
+<Callout type="note" title="非同期の深入りはしません">
+「今書かれている処理が終わったあとで、コールバックが呼ばれる」という順番の仕組みは、JavaScriptの**非同期処理**という大きなテーマの入り口です。この縁日では、コールバックが「今」ではなく「あとで」呼ばれることがある、という感覚だけをここで持ち帰ってください。仕組みの詳しい話には立ち入りません。
+</Callout>
+
+## つまずきポイント：fnとfn()はまったく別のもの
+
+コールバックでいちばん多い間違いは、「関数を渡す」つもりで「関数を呼び出した結果を渡してしまう」ことです。
+
+<Callout type="warn" title="つまずきポイント：呼び出しの丸かっこを、うっかりつけてしまう">
+次のコードを見てください。`sayHi`を`repeat`に渡したつもりですが、`sayHi()`と丸かっこをつけてしまっています。
+
+```js expect-error
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+function sayHi() {
+  console.log("こんにちは！");
+}
+
+repeat(3, sayHi());
+```
+
+```console
+こんにちは！
+TypeError: fn is not a function
+```
+
+`sayHi()`と丸かっこをつけると、その場で`sayHi`が**即座に実行**されます（だから`こんにちは！`が1回だけ表示されます）。そして`repeat`の第2引数に渡るのは、`sayHi`という関数そのものではなく、`sayHi()`の**戻り値**——`sayHi`は何も`return`していないので`undefined`です。`repeat`の中で`fn(i)`を呼ぼうとしても、`fn`は`undefined`なので、`TypeError: fn is not a function`になります。
+
+**「あとで呼んでもらう」つもりなら、丸かっこをつけずに関数の値そのものを渡します。** `repeat(3, sayHi)`が正しい形です。
+</Callout>
+
+<Exercise title="演習1: repeatで、金魚すくいのアナウンスを出す">
+
+本文の`repeat`をそのまま使い、`repeat(3, ...)`を呼び出して、`1匹目をすくいました`・`2匹目をすくいました`・`3匹目をすくいました`という3行を表示してください（`repeat`が渡す`i`は`0`から始まることに注意してください）。
+
+```js nocheck
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-ex1"
+  initialCode={`// ここでrepeatの呼び出しを試してみましょう
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`i`は`0`から始まるので、表示したい`1匹目`にするには`i + 1`を使います。渡すコールバックは、`i`を受け取って`console.log`するアロー関数です。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+repeat(3, (i) => console.log(`${...}匹目をすくいました`));
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+repeat(3, (i) => console.log(`${i + 1}匹目をすくいました`));
+```
+
+`i + 1`にすることで、`0, 1, 2`という内部のカウントを、人間にとって自然な`1, 2, 3`に変えて表示しています。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: forEachItemで、本のタイトルを表示する">
+
+本文の`forEachItem`をそのまま使い、`["三体", "コンビニ人間", "きみの色"]`という配列の各タイトルを、`『三体』`のように、かぎかっこで囲んで表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-ex2"
+  initialCode={`// ここでforEachItemの呼び出しを試してみましょう
+function forEachItem(items, callback) {
+  for (const item of items) {
+    callback(item);
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文の`yatai`の例と、渡すコールバックの中身が違うだけです。`title`を受け取って、テンプレートリテラルで`『${title}』`という文字列を作り、`console.log`します。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const books = [...];
+forEachItem(books, (title) => console.log(`『${...}』`));
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function forEachItem(items, callback) {
+  for (const item of items) {
+    callback(item);
+  }
+}
+
+const books = ["三体", "コンビニ人間", "きみの色"];
+forEachItem(books, (title) => console.log(`『${title}』`));
+```
+
+`forEachItem`の中身を変えずに、渡すデータとコールバックだけを変えるだけで、まったく別の用途に使い回せています。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: TypeErrorになるコードを直す">
+
+次のコードは実行すると`TypeError: fn is not a function`になります。原因を説明したうえで、正しく`こんにちは！`が3回表示されるように直してください。
+
+```js nocheck
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+function sayHi() {
+  console.log("こんにちは！");
+}
+
+repeat(3, sayHi());
+```
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-03-ex3"
+  expectError
+  initialCode={`// このコードを直してみましょう（このままではTypeErrorになります）
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+function sayHi() {
+  console.log("こんにちは！");
+}
+
+repeat(3, sayHi());
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+本文のつまずきポイントと同じ間違いです。`sayHi()`は「今すぐ`sayHi`を呼んで、その戻り値を渡す」という意味になってしまいます。渡したいのは関数の値そのものです。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+repeat(3, sayHi);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+function repeat(n, fn) {
+  for (let i = 0; i < n; i++) {
+    fn(i);
+  }
+}
+
+function sayHi() {
+  console.log("こんにちは！");
+}
+
+repeat(3, sayHi);
+```
+
+丸かっこを外して`sayHi`とだけ書くことで、「関数そのもの」が`repeat`に渡ります。`repeat`の中で`fn(i)`と呼ばれるたびに、`sayHi`が実行されます。`sayHi`は引数を使いませんが、`fn(i)`で渡された`i`は無視されるだけなので、エラーにはなりません。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- あとで呼んでもらうために渡す関数を**コールバック**と呼ぶ
+- 自作の`repeat(n, fn)`や`forEachItem(items, callback)`のように、「くり返しの骨組み」と「そのたびに何をするか」を分けられるのが、コールバックの便利なところ
+- `setTimeout(fn, ミリ秒)`は、コールバックを「今すぐ」ではなく「あとで」呼ぶ代表例。詳しい仕組み（非同期処理）はここでは扱わない
+- `fn`（関数そのもの）を渡すつもりで`fn()`（呼び出した結果）を渡してしまうのは、コールバックの定番の間違い。丸かっこの有無で意味がまったく変わる
+
+<Quiz
+  client:visible
+  storageKey="sekkei-03"
+  questions={[
+    {
+      q: '「コールバック」の説明として最も近いのは？',
+      choices: [
+        'いつも即座に呼び出される、特別な種類の関数',
+        'あとで呼んでもらうために、他の関数に渡す関数',
+        'エラーが起きたときだけ呼ばれる関数',
+      ],
+      answer: 1,
+      explain: 'コールバックは「呼び返される関数」という意味で、渡した先で（今すぐでもあとでも）呼んでもらう関数のことです。',
+    },
+    {
+      q: '`console.log("A"); setTimeout(() => console.log("B"), 0); console.log("C");` を実行した順番は？',
+      choices: ['A, B, C', 'A, C, B', 'B, A, C'],
+      answer: 1,
+      explain: 'setTimeoutは0ミリ秒指定でも「今の処理がひと通り終わったあとで」コールバックを呼ぶため、最後に実行されます。',
+    },
+    {
+      q: '`repeat(3, sayHi())` と `repeat(3, sayHi)` のちがいは？',
+      choices: [
+        'どちらも同じ意味で、結果も同じになる',
+        '前者はsayHiをその場で1回呼び出して戻り値を渡し、後者は関数そのものを渡す',
+        '前者はエラーになり、後者だけ実行できる',
+      ],
+      answer: 1,
+      explain: '丸かっこをつけると即座に呼び出されて戻り値が渡ります。丸かっこなしなら関数の値そのものが渡り、あとで呼んでもらえます。',
+    },
+  ]}
+/>

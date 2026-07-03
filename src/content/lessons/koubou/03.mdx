@@ -1,0 +1,316 @@
+---
+title: 画面を作る
+course: koubou
+order: 3
+description: document.createElementとappendChildで、本の一覧を本物のHTML要素として組み立てます。空状態の表示と、ユーザー入力をinnerHTMLに入れてはいけない理由も扱います。
+seed: 一覧は見えるようになりました。でも今のhondanaは、まだ画面から本を追加したり、削除したりできません。次は、フォームとボタンで画面に話しかけます。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+
+## 冊数だけでは、物足りない
+
+前回までのhondanaは、「2冊、登録されています。」という1行を表示するだけでした。今日のゴールは、1冊ずつタイトル・著者・評価・感想が並ぶ、本物の一覧を画面に作ることです。
+
+## document.createElementで、要素を作る
+
+コース5では、`querySelector`で**既にあるHTML要素**を取ってくる方法を学びました。今日使う`document.createElement`は逆で、**まだどこにも属していない、新しいHTML要素をその場で作ります。**
+
+<HtmlRunner
+  client:visible
+  storageKey="koubou-03-a"
+  height={120}
+  initialHtml={`<ul id="list"></ul>
+<script>
+  const list = document.querySelector('#list');
+
+  const li = document.createElement('li');
+  li.textContent = "三体";
+  list.appendChild(li);
+</script>`}
+/>
+
+`document.createElement('li')`で、まだ画面のどこにも表示されていない`<li>`要素を1つ作ります。`textContent`で中身を入れ、最後に`list.appendChild(li)`で、既にある`<ul id="list">`の**子要素として差し込みます。** `appendChild`を呼ぶまでは、この`li`は画面に何も影響しません。「作る」と「画面に足す」が、はっきり2つの手順に分かれているのが`createElement`のやり方です。
+
+## 本の一覧を、ループで組み立てる
+
+1冊分の`<li>`を、`title`・`author`・`rating`をまとめた`<strong>`と、感想の`<p>`の2つで組み立て、それを本の数だけ繰り返します。
+
+<HtmlRunner
+  client:visible
+  storageKey="koubou-03-b"
+  height={160}
+  initialHtml={`<ul id="list"></ul>
+<script>
+  const books = [
+    { title: "三体", author: "劉慈欣", rating: 5, review: "スケールがすごい" },
+    { title: "お探し物は図書室まで", author: "青山美智子", rating: 4, review: "静かに沁みる" },
+  ];
+
+  const list = document.querySelector('#list');
+
+  for (const book of books) {
+    const li = document.createElement('li');
+
+    const heading = document.createElement('strong');
+    heading.textContent = \`\${book.title} / \${book.author} (評価\${book.rating})\`;
+
+    const review = document.createElement('p');
+    review.textContent = book.review;
+
+    li.appendChild(heading);
+    li.appendChild(review);
+    list.appendChild(li);
+  }
+</script>`}
+/>
+
+1冊ごとに、`<li>`という「容れ物」を作り、その中に`<strong>`と`<p>`を`appendChild`で足し、できあがった`<li>`を`list`に`appendChild`する——この繰り返しです。for-ofは、コース3から使ってきたおなじみの形です。
+
+## 何も登録されていないときの表示
+
+`books`が空の配列だったら、何も表示しないのではなく、「まだ本が登録されていません。」と案内を出します。
+
+<HtmlRunner
+  client:visible
+  storageKey="koubou-03-c"
+  height={100}
+  initialHtml={`<ul id="list"></ul>
+<script>
+  const books = [];
+  const list = document.querySelector('#list');
+
+  if (books.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = "まだ本が登録されていません。";
+    list.appendChild(empty);
+  }
+</script>`}
+/>
+
+空の一覧をそのまま放っておくと、「読み込みに失敗したのか、まだ0冊なのか」が利用者には区別できません。**空であることも、1つの状態として、はっきり画面に表す**——これはhondanaに限らず、一覧を扱うアプリでいつも大事になる考え方です。
+
+## innerHTMLではなく、textContentを使う理由
+
+ここまでのコードは、すべて`textContent`で中身を入れてきました。`innerHTML`という、よく似たプロパティもありますが、hondanaでは使いません。次の例で、その理由を確かめます。
+
+<HtmlRunner
+  client:visible
+  storageKey="koubou-03-d"
+  height={160}
+  initialHtml={`<ul id="list"></ul>
+<script>
+  const dangerousTitle = "<b>三体</b>";
+  const list = document.querySelector('#list');
+
+  const li1 = document.createElement('li');
+  li1.textContent = dangerousTitle;
+  list.appendChild(li1);
+
+  const li2 = document.createElement('li');
+  li2.innerHTML = dangerousTitle;
+  list.appendChild(li2);
+</script>`}
+/>
+
+同じ文字列`"<b>三体</b>"`を入れたのに、`textContent`の方は`<b>三体</b>`という文字がそのまま見え、`innerHTML`の方は太字の「三体」になって表示されます。`innerHTML`は、渡した文字列を**HTMLとして解釈し直す**からです。
+
+<Callout type="warn" title="つまずきポイント: innerHTMLに、利用者の入力をそのまま入れない">
+hondanaのタイトルや感想は、フォームから利用者が自由に入力できます。もし`li.innerHTML = book.title`のように書いていたら、誰かが`<img src=x onerror="...">`のような文字列をタイトルとして登録したとき、それがHTMLとして解釈され、**書き込んだ側が意図したJavaScriptが実行されてしまう**可能性があります。これはXSS(クロスサイトスクリプティング)と呼ばれる、代表的なWebの脆弱性の1つです。
+
+`textContent`は、渡した文字列をどこまでも「ただの文字」として扱います。HTMLタグに見える文字列が入っていても、タグとしては解釈されません。**利用者が入力した値を画面に表示するときは、textContentかcreateElementの組み合わせを使う**——これがhondanaの、そしてこの先あなたが書くアプリの基本の約束です。
+</Callout>
+
+## hondana.jsを、更新する
+
+これまでの3つのHtmlRunnerの中身を、`hondana.js`にまとめます。`index.html`には、`<p id="count">`のかわりに`<ul id="book-list">`を用意します。
+
+```js title="hondana.js" nocheck
+import { loadBooks, saveBooks } from './storage.js';
+
+function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (rating < 1 || rating > 5) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  return { title, author, rating, review };
+}
+
+const shelf = [
+  createBook("三体", "劉慈欣", 5, "スケールがすごい"),
+  createBook("お探し物は図書室まで", "青山美智子", 4, "静かに沁みる"),
+];
+saveBooks(shelf);
+
+const listEl = document.querySelector('#book-list');
+
+function render(books) {
+  listEl.textContent = "";
+
+  if (books.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = "まだ本が登録されていません。";
+    listEl.appendChild(empty);
+    return;
+  }
+
+  for (const book of books) {
+    const li = document.createElement('li');
+
+    const heading = document.createElement('strong');
+    heading.textContent = `${book.title} / ${book.author} (評価${book.rating})`;
+
+    const review = document.createElement('p');
+    review.textContent = book.review;
+
+    li.appendChild(heading);
+    li.appendChild(review);
+    listEl.appendChild(li);
+  }
+}
+
+render(loadBooks());
+```
+
+```html title="index.html"
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>hondana</title>
+</head>
+<body>
+  <h1>hondana</h1>
+  <ul id="book-list"></ul>
+
+  <script type="module" src="hondana.js"></script>
+</body>
+</html>
+```
+
+<Callout type="note" title="このファイルの検証について">
+`hondana.js`は`storage.js`と組み合わさってはじめて成立するので、CodeRunnerでは単体実行できません。実際に`hondana`フォルダの中に置いて、Node.js 22で構文を確認したものです。
+</Callout>
+
+`render`の先頭にある`listEl.textContent = "";`にも注目してください。空文字を代入すると、それまで`<ul>`の中にあった`<li>`は全部消えます(コース5で学んだ、textContent代入の性質です)。今日はまだ`render`を1回しか呼びませんが、この「まず空にしてから、作り直す」という形が、次のレッスンで生きてきます。
+
+<Exercise title="演習1: 3冊登録して、並び順を確認する">
+
+`shelf`に3冊目の本を追加し、ローカルサーバーで開いて、配列に書いた順番のとおりに上から並んで表示されることを確認してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`render`のfor-ofは、`books`配列の先頭から順番に処理します。配列の並びが、そのまま画面の上から下の並びになります。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+`shelf`に`createBook(...)`をもう1つ、カンマ区切りで追加します。
+</details>
+
+<details>
+<summary>こたえ</summary>
+特別な正解はありません。3つの`<li>`が、配列に書いた順番のとおりに表示されていれば成功です。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 評価を星で表示する">
+
+`heading`のtextContentに、評価の数字だけでなく、`"★".repeat(book.rating)`で作った星も表示してください。たとえば評価5なら「★★★★★」と表示されるようにします。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`"★".repeat(3)`は、`"★"`という文字列を3回繰り返した`"★★★"`を返します。テンプレートリテラルの中に埋め込めます。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+heading.textContent = `${book.title} / ${book.author} ${"★".repeat(book.rating)}`;
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+上のヒント2がそのままの実装です。`repeat`は、文字列を指定した回数だけ繰り返す、文字列のメソッドです。評価という数字を、視覚的にも分かりやすい形に変換できました。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: innerHTMLで書き直して、危険を確かめる">
+
+`render`関数の中の`heading.textContent = ...`を、一時的に`listEl.innerHTML += ...`のような形に書き換え、タイトルに`<b>実験</b>`のような文字列を含む本を登録して、表示のされ方の違いを確認してください。確認できたら、必ず`textContent`と`createElement`を使う元の形に戻してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+このレッスンの「innerHTMLではなく、textContentを使う理由」の節にあるHtmlRunnerの例と同じ現象が、実際のhondanaでも起きることを確かめる演習です。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+書き換えは実験用です。書き換えたら、`<b>実験</b>`というタイトルで1冊登録し(演習1の要領で`shelf`に追加するか、devtoolsで直接試します)、太字で「実験」と表示されることを確認します。
+</details>
+
+<details>
+<summary>こたえ</summary>
+`innerHTML`を使うと、`<b>実験</b>`というタイトルの`<b>`と`</b>`がHTMLタグとして解釈され、「実験」の部分だけが太字で表示されます。`textContent`と`createElement`の組み合わせなら、`<b>実験</b>`という文字列がそのまま(タグとして解釈されずに)表示されます。確認できたら、必ず元の`textContent`/`createElement`の形に戻してください。利用者が入力した値を画面に出すときは、この違いを常に意識する必要があります。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `document.createElement(タグ名)`は、まだどこにも属さない新しいHTML要素を作る。`appendChild`で、既にある要素の子として差し込む
+- 一覧は、for-ofで1冊ずつ`<li>`を組み立て、`appendChild`していく
+- 「本が0冊」も、はっきり画面に表す1つの状態として扱う
+- `innerHTML`は文字列をHTMLとして解釈し直すため、利用者の入力をそのまま渡すと危険(XSS)。**textContentかcreateElementの組み合わせを使う**
+- `要素.textContent = "";`で、それまでの子要素をすべて取り除ける
+
+<Quiz
+  client:visible
+  storageKey="koubou-03"
+  questions={[
+    {
+      q: 'document.createElement(\'li\') を呼んだ直後の状態として正しいのは?',
+      choices: [
+        '画面にすぐ空の<li>が表示される',
+        'まだどこにも属していない<li>要素が作られるだけで、appendChildするまで画面には現れない',
+        'querySelectorで取得済みの<li>要素と置き換わる',
+      ],
+      answer: 1,
+      explain: 'createElementは新しい要素を作るだけで、appendChildなどで既存の要素に差し込むまでは画面に現れません。',
+    },
+    {
+      q: 'ユーザーが入力したタイトルを画面に表示するとき、innerHTMLではなくtextContent(やcreateElement)を使うべき理由は?',
+      choices: [
+        'textContentの方がinnerHTMLよりタイプ数が少ないから',
+        'innerHTMLは文字列をHTMLとして解釈し直すため、悪意のある入力がタグやスクリプトとして実行される危険があるから',
+        'innerHTMLは古いブラウザでは動かないから',
+      ],
+      answer: 1,
+      explain: 'innerHTMLに利用者の入力をそのまま渡すと、HTMLタグとして解釈され、意図しないコードが実行される可能性があります(XSS)。',
+    },
+    {
+      q: 'render関数の先頭にある listEl.textContent = ""; は何のため?',
+      choices: [
+        '一覧を再び組み立てる前に、それまでの子要素をすべて取り除くため',
+        'ページ全体を再読み込みするため',
+        'localStorageの中身を消去するため',
+      ],
+      answer: 0,
+      explain: '空文字を代入すると、それまでの子要素がすべて取り除かれます。組み立て直す前に、いったん空にしています。',
+    },
+  ]}
+/>

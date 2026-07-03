@@ -1,0 +1,625 @@
+---
+title: 練習——ミニ図書館
+course: sekkei
+order: 8
+description: 関数・アロー関数・コールバック・map/filter/find・class・JSON・例外——コース4で学んだことを全部使って、本を管理するミニ図書館を作ります。
+seed: 図書館ができました。でも今はまだ、コンソールの中だけの世界です。次のコースでは、この仕組みをブラウザの画面につなげます——ページという舞台に、手を伸ばします。
+minutes: 40
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## コース4を、1つにまとめる
+
+コース4では、関数が値であること（レッスン1）、それを短く書くアロー関数（レッスン2）、あとで呼んでもらうコールバック（レッスン3）、配列の道具箱`map`・`filter`・`find`（レッスン4）、同じ形のオブジェクトをまとめる`class`（レッスン5）、データを文字列にして運ぶJSON（レッスン6）、エラーを受け止めたり自分から起こしたりする例外（レッスン7）——と学んできました。
+
+このレッスンでは、それを全部使って、小さな図書館を作ります。本を表す`Book`クラスと、本の集まりを管理する`Library`クラスです。
+
+## Bookクラス——1冊の本を表す
+
+まずは、1冊の本を表す、シンプルなクラスです。
+
+```js
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+
+  describe() {
+    return `『${this.title}』（${this.author}） 評価:${this.rating}`;
+  }
+}
+```
+
+`title`（タイトル）・`author`（著者）・`rating`（評価、1〜5の整数のつもり）を持ち、`describe()`で読みやすい文字列にします。レッスン5で作った`Yatai`と、形はそっくりです。
+
+## Libraryクラス——本の集まりを管理する
+
+`Library`は、`Book`の配列を持ち、追加・検索・保存・読み込みをまとめて引き受けます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-a"
+  initialCode={`class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+
+  describe() {
+    return \`『\${this.title}』（\${this.author}） 評価:\${this.rating}\`;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  listTitles() {
+    return this.books.map((book) => book.title);
+  }
+
+  search(keyword) {
+    return this.books.filter(
+      (book) => book.title.includes(keyword) || book.author.includes(keyword),
+    );
+  }
+
+  findByTitle(title) {
+    return this.books.find((book) => book.title === title);
+  }
+
+  toJSON() {
+    return JSON.stringify(this.books);
+  }
+
+  static fromJSON(json) {
+    const data = JSON.parse(json);
+    const library = new Library();
+    for (const item of data) {
+      library.addBook(new Book(item.title, item.author, item.rating));
+    }
+    return library;
+  }
+}
+
+const library = new Library();
+library.addBook(new Book("三体", "劉慈欣", 5));
+library.addBook(new Book("コンビニ人間", "村田沙耶香", 4));
+library.addBook(new Book("銀河鉄道の夜", "宮沢賢治", 5));
+
+console.log(library.listTitles());`}
+/>
+
+順番に見ていきます。
+
+- `addBook(book)`——レッスン7と同じ形で、`rating`が1〜5の範囲外なら`throw new Error(...)`します。おかしなデータが図書館に紛れ込むのを、その場で止めます
+- `listTitles()`——`this.books`を`map`で「タイトルの配列」に変換します（レッスン4）
+- `search(keyword)`——`filter`で、タイトルか著者に`keyword`を含む本だけを残します（レッスン4）
+- `findByTitle(title)`——`find`で、タイトルが完全に一致する最初の1冊を探します（レッスン4）
+- `toJSON()`——`this.books`を`JSON.stringify`で文字列にします（レッスン6）
+- `static fromJSON(json)`——`static`をつけたメソッドは、インスタンスからではなく`Library.fromJSON(...)`のように**クラス自身**から直接呼び出せます。中身は、文字列を`JSON.parse`でいったんただのオブジェクトの配列に戻し、それぞれを`new Book(...)`に**組み直して**から`addBook`する、という処理です
+
+## 検索する
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-b"
+  initialCode={`class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+
+  describe() {
+    return \`『\${this.title}』（\${this.author}） 評価:\${this.rating}\`;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  search(keyword) {
+    return this.books.filter(
+      (book) => book.title.includes(keyword) || book.author.includes(keyword),
+    );
+  }
+
+  findByTitle(title) {
+    return this.books.find((book) => book.title === title);
+  }
+}
+
+const library = new Library();
+library.addBook(new Book("三体", "劉慈欣", 5));
+library.addBook(new Book("コンビニ人間", "村田沙耶香", 4));
+library.addBook(new Book("銀河鉄道の夜", "宮沢賢治", 5));
+
+console.log(library.search("三体").map((book) => book.describe()));
+console.log(library.findByTitle("コンビニ人間").describe());
+console.log(library.findByTitle("存在しない本"));`}
+/>
+
+`search("三体")`は、タイトルか著者に`"三体"`を含む本を配列で返します。`findByTitle("存在しない本")`は、見つからなければコース3から見てきた`undefined`を返します——`find`は、ここでもエラーにはなりません。
+
+## 例外で、おかしなデータをはじく
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-c"
+  initialCode={`class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  listTitles() {
+    return this.books.map((book) => book.title);
+  }
+}
+
+const library = new Library();
+library.addBook(new Book("三体", "劉慈欣", 5));
+
+try {
+  library.addBook(new Book("謎の本", "謎の作者", 10));
+} catch (error) {
+  console.log("追加できませんでした:", error.message);
+}
+
+console.log(library.listTitles());`}
+/>
+
+評価`10`の本を追加しようとすると、`addBook`の中の`throw`が発動し、`try/catch`で受け止められます。`library.listTitles()`が`['三体']`のままであることから、おかしな本は図書館に入らなかったと分かります。
+
+## JSONで、保存して読み込む
+
+最後に、図書館のデータをJSONにして、また読み込みます。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-d"
+  initialCode={`class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  listTitles() {
+    return this.books.map((book) => book.title);
+  }
+
+  toJSON() {
+    return JSON.stringify(this.books);
+  }
+
+  static fromJSON(json) {
+    const data = JSON.parse(json);
+    const library = new Library();
+    for (const item of data) {
+      library.addBook(new Book(item.title, item.author, item.rating));
+    }
+    return library;
+  }
+}
+
+const library = new Library();
+library.addBook(new Book("三体", "劉慈欣", 5));
+library.addBook(new Book("コンビニ人間", "村田沙耶香", 4));
+
+const json = library.toJSON();
+console.log(json);
+
+const restoredLibrary = Library.fromJSON(json);
+console.log(restoredLibrary.listTitles());
+console.log(restoredLibrary instanceof Library);`}
+/>
+
+<Callout type="note" title="レッスン6の伏線を、fromJSONで回収する">
+レッスン6で、「`JSON.parse`が返すのは、もとのクラスのインスタンスではなく、ただのオブジェクト」だと確認しました。`Library.fromJSON`が`JSON.parse`の結果をそのまま使わず、1件ずつ`new Book(item.title, item.author, item.rating)`で**組み直している**のは、そのためです。ひと手間かけることで、読み込んだデータも、ちゃんと`describe()`が呼べる`Book`のインスタンスに戻ります。
+</Callout>
+
+<Exercise title="演習1: 平均評価を求めるaverageRatingを追加する">
+
+`Library`に、登録されているすべての本の`rating`の平均を返す`averageRating()`メソッドを追加してください。本が1冊もないときは`0`を返すようにしてください（`0`で割ることを避けます——レッスン7を思い出してください）。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-ex1"
+  initialCode={`// ここでaverageRatingを追加して試してみましょう
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`for-of`で`this.books`を歩きながら`rating`を合計し、最後に`this.books.length`で割ります。本が0冊のときに割り算をすると`0 / 0`で`NaN`になってしまうので、その前に`if (this.books.length === 0) return 0;`のように早めに返してしまいます。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+averageRating() {
+  if (this.books.length === 0) {
+    return 0;
+  }
+  let total = 0;
+  for (const book of this.books) {
+    total += ...;
+  }
+  return total / ...;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  averageRating() {
+    if (this.books.length === 0) {
+      return 0;
+    }
+    let total = 0;
+    for (const book of this.books) {
+      total += book.rating;
+    }
+    return total / this.books.length;
+  }
+}
+
+const library = new Library();
+library.addBook(new Book("三体", "劉慈欣", 5));
+library.addBook(new Book("コンビニ人間", "村田沙耶香", 4));
+library.addBook(new Book("銀河鉄道の夜", "宮沢賢治", 5));
+
+console.log(library.averageRating());
+```
+
+`5 + 4 + 5`を`3`で割った`4.666...`が表示されます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: fromJSONで読み込んだ本が、本当にBookのインスタンスか確かめる">
+
+`'[{"title":"三体","author":"劉慈欣","rating":5},{"title":"コンビニ人間","author":"村田沙耶香","rating":4}]'`という文字列を`Library.fromJSON`で読み込み、`library.books[0]`が`Book`のインスタンスかどうかを`instanceof`で確認してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-ex2"
+  initialCode={`// ここでfromJSONを試してみましょう
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  static fromJSON(json) {
+    const data = JSON.parse(json);
+    const library = new Library();
+    for (const item of data) {
+      library.addBook(new Book(item.title, item.author, item.rating));
+    }
+    return library;
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`Library.fromJSON(json)`で`library`を作り、`library.books[0] instanceof Book`を`console.log`するだけです。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const library = Library.fromJSON(json);
+console.log(library.books[0] instanceof Book);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  static fromJSON(json) {
+    const data = JSON.parse(json);
+    const library = new Library();
+    for (const item of data) {
+      library.addBook(new Book(item.title, item.author, item.rating));
+    }
+    return library;
+  }
+}
+
+const json = '[{"title":"三体","author":"劉慈欣","rating":5},{"title":"コンビニ人間","author":"村田沙耶香","rating":4}]';
+const library = Library.fromJSON(json);
+
+console.log(library.books[0] instanceof Book);
+console.log(library.books[0].title);
+```
+
+`true`が表示されます。`fromJSON`の中で`new Book(...)`と組み直しているからこそ、`JSON.parse`だけでは失われるはずだった「`Book`のインスタンスである」という性質が保たれています。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: タイトルが空の本を、追加できないようにする">
+
+`addBook`に、`book.title`が空文字列（`""`）のときは`throw new Error("タイトルは必須です");`するチェックを追加してください（`rating`のチェックより先に行います）。空のタイトルで追加を試みて、`catch`でメッセージが表示されることを確認してください。
+
+<CodeRunner
+  client:visible
+  storageKey="sekkei-08-ex3"
+  initialCode={`// ここでタイトルのチェックを追加して試してみましょう
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  listTitles() {
+    return this.books.map((book) => book.title);
+  }
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+`if (!book.title) { throw new Error("タイトルは必須です"); }`を、`rating`のチェックより前に追加します。空文字列`""`はfalsyなので、`!book.title`で判定できます（コース2の`if (name)`の話を思い出してください）。
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+addBook(book) {
+  if (...) {
+    throw new Error("タイトルは必須です");
+  }
+  // このあとは、もとのratingのチェックとpushをそのまま残す
+  ...
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+class Book {
+  constructor(title, author, rating) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+  }
+}
+
+class Library {
+  constructor() {
+    this.books = [];
+  }
+
+  addBook(book) {
+    if (!book.title) {
+      throw new Error("タイトルは必須です");
+    }
+    if (book.rating < 1 || book.rating > 5) {
+      throw new Error("評価は1〜5の範囲にしてください");
+    }
+    this.books.push(book);
+  }
+
+  listTitles() {
+    return this.books.map((book) => book.title);
+  }
+}
+
+const library = new Library();
+
+try {
+  library.addBook(new Book("", "名無し", 3));
+} catch (error) {
+  console.log("追加できませんでした:", error.message);
+}
+
+library.addBook(new Book("三体", "劉慈欣", 5));
+console.log(library.listTitles());
+```
+
+タイトルが空の本は`throw`ではじかれ、`三体`だけが図書館に残ります。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `Book`と`Library`という2つの`class`で、1冊の本と、本の集まりをそれぞれ表した
+- `map`・`filter`・`find`で、タイトル一覧の作成・検索・1件検索をそれぞれ書いた
+- `addBook`の中で`throw`し、おかしなデータが入り込む前に止めた
+- `JSON.stringify`で保存用の文字列を作り、`static fromJSON`で文字列から`Book`のインスタンスを**組み直して**読み込んだ
+- コース4で学んだ7つの道具は、単独でも便利ですが、組み合わせるとさらに大きな仕組みを作れる
+
+<Quiz
+  client:visible
+  storageKey="sekkei-08"
+  questions={[
+    {
+      q: '`Library.fromJSON(json)`が、`JSON.parse`の結果をそのまま使わず、1件ずつ`new Book(...)`で組み直しているのはなぜ？',
+      choices: [
+        'JSON.parseはエラーになりやすいから',
+        'JSON.parseが返すのはただのオブジェクトで、Bookのインスタンスではないから',
+        '組み直さないと、JSON.stringifyが使えなくなるから',
+      ],
+      answer: 1,
+      explain: 'JSON.parseはクラスの情報を持たないただのオブジェクトを返します。describe()などのメソッドを使えるようにするには、new Book(...)で組み直す必要があります。',
+    },
+    {
+      q: '`static fromJSON(json)`のように`static`をつけたメソッドの呼び出し方として正しいのは？',
+      choices: [
+        '`new Library().fromJSON(json)`のように、インスタンスから呼び出す',
+        '`Library.fromJSON(json)`のように、クラス自身から呼び出す',
+        '`fromJSON(json)`のように、クラス名なしで呼び出す',
+      ],
+      answer: 1,
+      explain: 'staticメソッドは、インスタンスではなくクラス自身に属し、クラス名.メソッド名(...)の形で呼び出します。',
+    },
+    {
+      q: '`addBook`が評価の範囲外の本を`throw`ではじいたとき、`library.listTitles()`の中身は？',
+      choices: [
+        'はじかれた本のタイトルも含まれる',
+        'はじかれた本は含まれず、それより前に追加した本だけが残る',
+        'library全体が空になる',
+      ],
+      answer: 1,
+      explain: 'throwが実行された時点でaddBookの残りの処理（push）は行われないため、はじかれた本は配列に入りません。それより前に追加された本には影響しません。',
+    },
+  ]}
+/>

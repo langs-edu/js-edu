@@ -1,0 +1,241 @@
+---
+title: エラーと友達になる
+course: hajimete
+order: 7
+description: SyntaxError・ReferenceError・TypeErrorという3種類のエラーの読み方と、undefinedやNaNが静かに流れていくケースの両方に向き合います。JavaScriptという読み手の、誠実な性格に出会うレッスンです。
+seed: "エラーが読めれば冒険できます。最後に、ブラウザの外——Node.jsという舞台も覗いておきましょう"
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## エラーは、失敗ではなく返事
+
+前回、`"abc" * 2`がエラーにならず`NaN`という値を返すことを見ました。でも、これまでのレッスンでも何度か、`const`への再代入のように、はっきりとエラーで止まる例にも出会っています。ここで、JavaScriptが出すエラーを整理して、正面から向き合っておきましょう。**エラーメッセージは、あなたを困らせるためのものではなく、「今、何が起きたか」を教えてくれる返事です。** 読み方さえ分かれば、こわいものではありません。
+
+## SyntaxError——文としてすでに壊れている
+
+いちばん早い段階で発覚するのが**SyntaxError**（構文エラー）です。丸かっこの閉じ忘れなど、コードが文としてそもそも成立していないときに起こります。次のコードは、実行できない例として示します。
+
+```js nocheck
+console.log("いらっしゃい"
+```
+
+閉じる丸かっこ`)`が足りません。これを実行しようとすると、次のようなメッセージが表示されます（実際の画面には、この上に問題の行を指し示す印なども表示されますが、ここでは要点だけを示しています）。
+
+```console
+SyntaxError: missing ) after argument list
+```
+
+SyntaxErrorは、**コードが1行も実行される前に**発覚するのが特徴です。「文として読めない」という、いちばん手前の段階のエラーだからです。
+
+## ReferenceError——存在しない名前を呼んでいる
+
+次によく出会うのが**ReferenceError**です。宣言していない変数名を使おうとしたときに起こります。
+
+<CodeRunner client:visible storageKey="hajimete-07-a" expectError initialCode={`console.log(mikan);`} />
+
+`mikan`という変数は、どこにも`const`や`let`で宣言していません。実行すると、次のメッセージが表示されます。
+
+```console
+ReferenceError: mikan is not defined
+```
+
+「`mikan`は定義されていません」——そのままの意味です。多くの場合、変数名のタイプミスか、宣言を書き忘れたことが原因です。
+
+## TypeError——値の種類に合わない使い方をしている
+
+3つ目が**TypeError**です。値の型に合わない操作をしようとしたときに起こります。
+
+<CodeRunner client:visible storageKey="hajimete-07-b" expectError initialCode={`const kosuu = 5;
+kosuu();`} />
+
+`kosuu`は数値の`5`です。数値は関数ではないので、`kosuu()`のように丸かっこをつけて呼び出すことはできません。
+
+```console
+TypeError: kosuu is not a function
+```
+
+「`kosuu`は関数ではありません」。数値を関数として呼び出そうとした、という食い違いをそのまま教えてくれています。
+
+## 静かに流れるundefinedと、そこから生まれるTypeError
+
+ここまでの3つは、どれもエラーで止まる例でした。でも、JavaScriptには、エラーにならずに`undefined`が静かに流れていくケースもあります。両方を1つのコードで見てみましょう。
+
+<CodeRunner client:visible storageKey="hajimete-07-c" initialCode={`let na;
+console.log(na);`} />
+
+`let na;`のように、`let`で名前だけ宣言して値を代入しないと、その変数には自動的に`undefined`という値が入ります。`console.log(na)`を実行してもエラーにはならず、**「まだ何も入っていない」ことを表す`undefined`という値**が静かに出力されます。ここまでは、前回見た`NaN`と同じ「エラーにならずに流れる」パターンです。
+
+では、その`undefined`をさらに使おうとするとどうなるでしょうか。
+
+<CodeRunner client:visible storageKey="hajimete-07-d" expectError initialCode={`let na;
+console.log(na);
+console.log(na.length);`} />
+
+1行目はさっきと同じく`undefined`が出力されますが、2行目でついにエラーになります。
+
+```console
+TypeError: Cannot read properties of undefined (reading 'length')
+```
+
+「`undefined`のプロパティは読めません」。`na`の中身が`undefined`だったので、そこにさらに`.length`をつけて中身を読もうとしたところで、ようやく食い違いが表面化しました。**JavaScriptは、止まって教えてくれるとは限らない読み手です。** `undefined`や`NaN`は、発生した瞬間には教えてくれず、それを次に使おうとした瞬間に初めてエラーとして現れることがよくあります。
+
+<Callout type="warn" title="つまずきポイント：エラーの発生場所と、原因の場所は違うことがある">
+上の例で、実際にエラーになった行は3行目でしたが、根本の原因は2行目——`na`に何も値が代入されていなかったこと——にあります。エラーメッセージの行番号だけを見て「ここが悪い」と決めつけず、その値がどこから来たのかを、少し上の行までさかのぼって考える習慣をつけておくと、原因を見つけやすくなります。
+</Callout>
+
+## スタックトレースの読み方
+
+エラーメッセージの下に、`at ...`で始まる行がいくつか続くことがあります。これを**スタックトレース**と呼びます。エラーが起きた場所から、そこを呼び出した場所へと、内側から外側に向かって順に並んだ記録です。行数が多くて圧倒されそうになりますが、慣れないうちは、いちばん上の1行——エラーの種類とメッセージそのもの——だけ読めれば、たいていは十分です。
+
+このコースのCodeRunnerでも、ブラウザの開発者ツールのコンソール（レッスン2）でも、エラーが起きたときの基本的な表示のされ方は同じです。同じJavaScriptという言語が、同じルールでエラーを教えてくれています。
+
+<Exercise title="演習1: わざとReferenceErrorを起こす">
+
+宣言していない変数名を`console.log`に渡して、わざとReferenceErrorを起こしてください。
+
+<CodeRunner client:visible storageKey="hajimete-07-e" initialCode={`// 宣言していない変数名を console.log してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`mikan`の例と同じ形です。`const`や`let`で一度も宣言していない名前を使います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log(存在しない名前);`という1行だけで十分です。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js expect-error
+console.log(natto);
+```
+
+`ReferenceError: natto is not defined`のように表示されれば成功です。`natto`の部分は、あなたが使った名前に変わります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: わざとTypeErrorを起こす">
+
+文字列の変数を1つ作り、その文字列に存在しないメソッド（たとえば`.oyogu()`のような、架空の名前）を呼び出して、わざとTypeErrorを起こしてください。
+
+<CodeRunner client:visible storageKey="hajimete-07-f" initialCode={`// 文字列の変数を作って、存在しないメソッドを呼び出してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`kosuu()`の例と似ていますが、今回は変数ではなく、変数の**メソッド**が存在しないパターンです。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`const 名前 = "文字列";`のあと、`名前.存在しないメソッド名();`と書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js expect-error
+const kingyo = "赤色の金魚";
+kingyo.oyogu();
+```
+
+`TypeError: kingyo.oyogu is not a function`のように表示されれば成功です。文字列に`oyogu`というメソッドは存在しないため、関数として呼び出そうとしたところでエラーになります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: undefinedからTypeErrorへの流れを、自分で作る">
+
+値を代入していない`let`の変数を出力して`undefined`を確認したあと、その`undefined`にさらにメソッドを呼び出して、TypeErrorを起こしてください。
+
+<CodeRunner client:visible storageKey="hajimete-07-g" initialCode={`// let で変数を宣言するだけ（値は代入しない）で undefined を確認したあと、
+// その値にさらにメソッドを呼び出してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`na`の例と同じ形です。1行目は`undefined`が静かに出力され、2行目でエラーになる、という2段階の流れを作ります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`let 名前;`（値を代入しない）のあと、`console.log(名前);`、続けて`console.log(名前.何かのメソッド());`と書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js expect-error
+let atarashiNedan;
+console.log(atarashiNedan);
+console.log(atarashiNedan.toFixed(0));
+```
+
+1行目は`undefined`、2行目は`TypeError: Cannot read properties of undefined (reading 'toFixed')`のようなメッセージが表示されれば成功です。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- **SyntaxError**は文として成立していない、**ReferenceError**は存在しない名前を使った、**TypeError**は値の種類に合わない使い方をした、というサイン
+- `undefined`や`NaN`は、発生した瞬間はエラーにならず、それを次に使おうとした瞬間にTypeErrorとして表面化することがある
+- エラーメッセージの`at ...`の並びはスタックトレース。慣れないうちは、いちばん上の1行だけ読めれば十分
+- CodeRunnerでも、ブラウザの開発者ツールでも、エラーの読み方は同じ
+
+<Quiz
+  client:visible
+  storageKey="hajimete-07"
+  questions={[
+    {
+      q: '宣言していない変数名を使ったときに出るエラーはどれ？',
+      choices: ['SyntaxError', 'ReferenceError', 'TypeError'],
+      answer: 1,
+      explain: '存在しない名前を参照しようとしたときに出るのがReferenceErrorです。',
+    },
+    {
+      q: '`let na;`のように、値を代入せずに変数を宣言すると、その変数の中身はどうなる？',
+      choices: [
+        '即座にTypeErrorになる',
+        'エラーにならず、undefinedという値になる',
+        '自動的に0という値になる',
+      ],
+      answer: 1,
+      explain: '値を代入していない変数には、エラーにならずundefinedという値が静かに入ります。',
+    },
+    {
+      q: '`console.log("いらっしゃい"`のように丸かっこを閉じ忘れたコードは、どのタイミングでエラーになる？',
+      choices: [
+        '1行実行されたあとで初めてエラーになる',
+        'コードが1行も実行される前に、SyntaxErrorになる',
+        'エラーにはならず、無視されて次に進む',
+      ],
+      answer: 1,
+      explain: '構文として成立していないコードは、実行が始まる前の段階でSyntaxErrorになります。',
+    },
+  ]}
+/>

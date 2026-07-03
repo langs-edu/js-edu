@@ -1,0 +1,16 @@
+---
+title: TypeScriptという義兄弟
+order: 10
+description: "JavaScriptに型を足した言語、TypeScript。2012年にMicrosoftから生まれた義兄弟と、いまの学びの関係。"
+relatedLessons: ["koubou/06"]
+---
+
+求人情報やプログラミングの話題で、TypeScriptという名前を見かけたことがあるかもしれません。JavaScriptを学んでいる最中なのに、また別の言語が要るのか——と不安になった人へ。安心してください。これは赤の他人ではなく、義理の兄弟のような間柄です。
+
+TypeScriptは2012年10月、Microsoftが公開した言語です。設計を率いたのはAnders Hejlsberg。Turbo PascalやDelphi、C#を生んだ、言語設計の大ベテランです。狙いは最初から明確で、「大規模なJavaScriptアプリケーションの開発を楽にすること」でした。
+
+その設計には、はっきりした割り切りがあります。TypeScriptはJavaScriptの上位互換——正しいJavaScriptのコードは、原則としてそのまま正しいTypeScriptのコードでもある、という関係です。TypeScriptが足すのは、主に「型注釈」。この変数はstringである、この関数はnumberを受け取る、と書き添えておくと、実行する前に矛盾を指摘してもらえます。undefinedが静かに流れていく事故を実行前に捕まえられる、と言えば、この縁日で学んできたあなたには価値が伝わるはずです。
+
+もうひとつの割り切りは、TypeScriptのコードは最終的にJavaScriptに変換されてから動く、ということです。型注釈は変換のときに取り除かれ、ブラウザやNode.jsが実際に実行するのは素のJavaScript。つまり、文法の土台も、配列やオブジェクトの道具箱も、実行の舞台も、すべてJavaScriptと地続きなのです。
+
+だから、学ぶ順序を心配する必要はありません。この縁日で身につけた`const`も、関数も、配列もオブジェクトも、TypeScriptではそっくりそのまま使います。JavaScriptを知らずにTypeScriptは書けませんが、JavaScriptを知っていれば、TypeScriptは「型の書き方を覚えるだけ」の距離にあります。義兄弟への道は、いまあなたが歩いている道の続きなのです。

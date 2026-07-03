@@ -1,0 +1,328 @@
+---
+title: 数えてくりかえす（for）
+course: nagare
+order: 4
+description: 回数を決めてくりかえすときのための書き方、for文を学びます。初期化・条件・更新を1行にまとめられる読みやすさと、for文を入れ子にするネストの考え方に出会います。
+seed: くりかえしの道具がそろいました。次は、くりかえしの中身そのものに名前をつけて、何度でも呼び出せるようにします——関数です。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 数えるくりかえしには、専用の書き方がある
+
+前回の`while`で、提灯を5個つけるプログラムを書きました。もう一度見てみます。
+
+```js title="Lantern.js"
+let count = 0;
+const total = 5;
+
+while (count < total) {
+  count = count + 1;
+  console.log(`${count}個目の提灯をつけました`);
+}
+```
+
+「変数を用意する」「条件を調べる」「変数を更新する」の3つが、コードのあちこちに散らばっています。`count = count + 1;`を書き忘れると無限ループになる、という危険も前回見た通りです。「決まった回数だけくりかえす」という、とてもよくある場面には、この3つを1か所にまとめて書ける専用の文があります。`for`です。
+
+## for文の基本
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-a"
+  initialCode={`for (let i = 1; i <= 5; i++) {
+  console.log(\`\${i}個目の提灯をつけました\`);
+}`}
+/>
+
+```console
+1個目の提灯をつけました
+2個目の提灯をつけました
+3個目の提灯をつけました
+4個目の提灯をつけました
+5個目の提灯をつけました
+```
+
+`for (初期化; 条件; 更新) { ... }`という形です。3つの部分は、それぞれこう対応しています。
+
+| 部分 | このコードでの中身 | 役割 |
+|---|---|---|
+| 初期化 | `let i = 1` | ループが始まる前に1回だけ実行される |
+| 条件 | `i <= 5` | 毎回チェックされ、trueの間だけくりかえす |
+| 更新 | `i++` | 1回のくりかえしが終わるたびに実行される |
+
+`while`では別々の場所に書いていた3つが、`for`の`( )`の中に1行でまとまりました。「更新を書き忘れて無限ループになる」という事故も、`for`なら`( )`を見ればひと目で気づけます。
+
+`i++`は`i = i + 1`の短縮形です。`i`を1増やすだけの、とてもよく使う操作なので専用の書き方が用意されています。同じように`i--`は`i = i - 1`の短縮形です。
+
+`while`と`for`、どちらを使うか迷ったら、こう考えてください。「何回くりかえすか、始める前から決まっている」なら`for`。「何回くりかえすかは分からないけれど、ある条件を満たすまで続けたい」なら`while`。前回の数当てゲームの下準備で見た「7の倍数が見つかるまで」のようなくりかえしは、何回で見つかるか事前には分からないので`while`が向いています。一方、今日の九九のように「1から9まで」と最初から回数が決まっているくりかえしは`for`が向いています。どちらで書いても動くことは多いですが、意図が伝わりやすいほうを選ぶと、あとで読み返したときに親切です。
+
+## 九九を表示する
+
+数え上げるくりかえしの定番、九九をやってみましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-b"
+  initialCode={`const dan = 3;
+
+for (let i = 1; i <= 9; i++) {
+  console.log(\`\${dan} x \${i} = \${dan * i}\`);
+}`}
+/>
+
+```console
+3 x 1 = 3
+3 x 2 = 6
+3 x 3 = 9
+3 x 4 = 12
+3 x 5 = 15
+3 x 6 = 18
+3 x 7 = 21
+3 x 8 = 24
+3 x 9 = 27
+```
+
+`3の段`だけなら、これで表示できました。では、`2の段`から`4の段`まで、まとめて表示したくなったらどうしますか。
+
+## forを入れ子にする——ネスト
+
+`for`の`{ }`の中に、もう1つ`for`を書けます。これを**ネスト**（入れ子）と呼びます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-c"
+  initialCode={`for (let dan = 2; dan <= 4; dan++) {
+  for (let i = 1; i <= 3; i++) {
+    console.log(\`\${dan} x \${i} = \${dan * i}\`);
+  }
+}`}
+/>
+
+```console
+2 x 1 = 2
+2 x 2 = 4
+2 x 3 = 6
+3 x 1 = 3
+3 x 2 = 6
+3 x 3 = 9
+4 x 1 = 4
+4 x 2 = 8
+4 x 3 = 12
+```
+
+外側の`for (let dan = 2; dan <= 4; dan++)`が1回進むたびに、内側の`for (let i = 1; i <= 3; i++)`が最初から最後まで、まるごと実行されます。`dan`が`2`のとき内側が3回、`dan`が`3`のときまた内側が3回……という具合に、外側と内側の回数がかけ算されます。ここでは外側3回×内側3回で、合計9行が表示されました。
+
+<Callout type="warn" title="つまずきポイント：内側と外側の変数名を同じにしない">
+ネストしたループでは、内側と外側で別の変数名（ここでは`dan`と`i`）を使ってください。もし両方`i`という名前にしてしまうと、内側の`for`が外側の`i`を上書きしてしまい、外側のくりかえしが狂います。名前がどこまで見えるか（スコープ）については、このコースの後半で詳しく扱います。
+</Callout>
+
+<Exercise title="演習1: 1から10まで表示する">
+
+`for`を使って、`1`から`10`までの数字を1行ずつ表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`for (let i = 1; i <= 10; i++)`という形を使い、中で`i`をそのまま表示します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+for (let i = 1; i <= 10; i++) {
+  console.log(...);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+for (let i = 1; i <= 10; i++) {
+  console.log(i);
+}
+```
+
+```console
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 1から20までの偶数の合計">
+
+`for`を使って`1`から`20`までの数を調べ、偶数だけを合計して表示してください。`if`と組み合わせます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-ex2"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+合計を入れておく変数を`0`で用意しておき、`for`の中で`i % 2 === 0`のときだけ`goukei`に足し込みます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let goukei = 0;
+
+for (let i = 1; i <= 20; i++) {
+  if (i % 2 === 0) {
+    goukei = goukei + i;
+  }
+}
+
+console.log(goukei);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+let goukei = 0;
+
+for (let i = 1; i <= 20; i++) {
+  if (i % 2 === 0) {
+    goukei = goukei + i;
+  }
+}
+
+console.log(`1から20までの偶数の合計は${goukei}です`);
+```
+
+```console
+1から20までの偶数の合計は110です
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: ネストしたforで星の四角を描く">
+
+ネストした`for`を使って、`★`を5個並べた行を3行表示してください。内側のループで文字列をつなげて1行分を作り、外側のループで行数を数えます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-04-ex3"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+1行ぶんの文字列を空の`""`から始めて、内側の`for`で`★`をつなげていきます。1行が完成したら、外側の`for`の中で`console.log`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+for (let row = 1; row <= 3; row++) {
+  let line = "";
+
+  for (let col = 1; col <= 5; col++) {
+    line = line + "★";
+  }
+
+  console.log(line);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+for (let row = 1; row <= 3; row++) {
+  let line = "";
+
+  for (let col = 1; col <= 5; col++) {
+    line = line + "★";
+  }
+
+  console.log(line);
+}
+```
+
+```console
+★★★★★
+★★★★★
+★★★★★
+```
+
+外側の`for`が1行分の準備（`line`を空文字列にリセット）と表示を担当し、内側の`for`がその1行の中身を作っています。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `for (初期化; 条件; 更新) { ... }`は、初期化・条件・更新を1か所にまとめて書ける、数え上げるくりかえし専用の文
+- `i++`は`i = i + 1`の短縮形。`i--`も同様に`i = i - 1`の短縮形
+- `for`の中にもう1つ`for`を書くことをネスト（入れ子）と呼ぶ。外側が1回進むごとに、内側が最初から最後まで実行される
+- ネストしたループでは、内側と外側で違う変数名を使う
+
+<Quiz
+  client:visible
+  storageKey="nagare-04"
+  questions={[
+    {
+      q: 'for (let i = 0; i < 3; i++) { ... } で、初期化・条件・更新にあたるのはどれ？',
+      choices: ['i < 3が更新、i++が条件', 'let i = 0が初期化、i < 3が条件、i++が更新', 'すべて条件'],
+      answer: 1,
+      explain: 'forの( )の中は、初期化;条件;更新の順で並びます。let i = 0が初期化、i < 3が条件、i++が更新です。',
+    },
+    {
+      q: 'i++ の意味として正しいのは？',
+      choices: ['iを1減らす', 'iを1増やす', 'iを2倍にする'],
+      answer: 1,
+      explain: 'i++はi = i + 1の短縮形で、iを1増やします。',
+    },
+    {
+      q: '外側のforが3回、内側のforが2回くりかえすようにネストすると、内側の処理は合計何回実行される？',
+      choices: ['2回', '3回', '6回'],
+      answer: 2,
+      explain: '外側が1回進むごとに内側が最初から最後まで実行されるので、3回×2回で合計6回です。',
+    },
+  ]}
+/>

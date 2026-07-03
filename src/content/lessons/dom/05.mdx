@@ -1,0 +1,342 @@
+---
+title: フォームと入力
+course: dom
+order: 5
+description: input要素とvalueプロパティで、読み手が打ち込んだ文字を受け取ります。valueが常に文字列であること、Number()での変換、そして空チェックによる簡単なバリデーションを学びます。
+seed: ここまでの5レッスンで、見て、書き換えて、応えて、受け取る——一通りの動きがそろいました。最後は、これらを全部使って、ひとつの遊び道具を作ります。
+minutes: 22
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 読み手から、文字を受け取る
+
+ここまでは、ボタンを押すという「行動」には応えられても、読み手が書いた「言葉」そのものを受け取ってはいませんでした。それを受け取る入り口が`<input>`です。
+
+```html
+<input id="name-input" type="text" placeholder="お名前">
+```
+
+`<input>`は`<p>`と違い、終了タグを書きません。読み手が打ち込んだ文字は、`.value`というプロパティで読み取れます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-a"
+  height={180}
+  initialHtml={`<input id="name-input" type="text" placeholder="お名前">
+<button id="greet-btn">呼びかける</button>
+<p id="greet-result"></p>
+<script>
+  const input = document.querySelector("#name-input");
+  const button = document.querySelector("#greet-btn");
+  const result = document.querySelector("#greet-result");
+  button.addEventListener("click", () => {
+    result.textContent = input.value + "さん、いらっしゃい";
+  });
+</script>`}
+/>
+
+実際に自分の名前を入力欄に打ち込んで、「呼びかける」ボタンを押してみてください。入力した文字の後ろに「さん、いらっしゃい」が続いて表示されます。`input.value`が、その瞬間に入力欄に入っている文字を返しています。
+
+## .valueは、いつでも文字列
+
+ここで、大事な誠実な事実があります。**`.value`は、`type`が何であっても常に文字列**です。数字だけを入れるつもりの`<input>`であっても同じです。
+
+<CodeRunner
+  client:visible
+  storageKey="dom-05-b"
+  initialCode={`// input.value は、どんな type の input でも常に文字列です
+const aValue = "3";  // 例えば <input value="3"> から読み取った値
+const bValue = "4";  // 例えば <input value="4"> から読み取った値
+console.log(aValue + bValue);
+console.log(Number(aValue) + Number(bValue));`}
+/>
+
+実行すると、`aValue + bValue`は数の足し算にはならず、`"34"`という文字列の連結になります。両方とも文字列だからです。数として計算したいときは、`Number()`で変換してから足す必要があります。`Number(aValue) + Number(bValue)`なら、期待通り`7`になります。
+
+同じことを、実際のフォームでも確かめてみましょう。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-c"
+  height={200}
+  initialHtml={`<input id="num-a" type="text" value="3">
+<input id="num-b" type="text" value="4">
+<button id="add-btn">たす</button>
+<p id="sum-result"></p>
+<script>
+  const a = document.querySelector("#num-a");
+  const b = document.querySelector("#num-b");
+  const button = document.querySelector("#add-btn");
+  const result = document.querySelector("#sum-result");
+  button.addEventListener("click", () => {
+    const total = Number(a.value) + Number(b.value);
+    result.textContent = "合計: " + total;
+  });
+</script>`}
+/>
+
+そのままボタンを押すと、`3`と`4`が`Number()`で数値に変換されてから足され、「合計: 7」と表示されます。入力欄の数字を書き換えて、もう一度押してみてください。
+
+<Callout type="warn" title="つまずきポイント：Number()を忘れると文字列がつながるだけ">
+`Number(a.value) + Number(b.value)`の`Number()`を省いて`a.value + b.value`と書くと、エラーにはならずに`"34"`のような文字列がそのままつながります。JSは「止まって教えてくれるとは限らない読み手」でした。数として使うつもりなら、`Number()`で変換したかどうかを自分で確かめる習慣が要ります。
+</Callout>
+
+## 空チェックという、簡単なバリデーション
+
+何も入力されていないまま送信されたら困る、という場面もよくあります。`.value`が空文字列`""`かどうかを`if`で確かめれば、簡単なチェックができます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-d"
+  height={180}
+  initialHtml={`<input id="wish-input" type="text" placeholder="お願いごと">
+<button id="wish-btn">奉納する</button>
+<p id="wish-result"></p>
+<script>
+  const input = document.querySelector("#wish-input");
+  const button = document.querySelector("#wish-btn");
+  const result = document.querySelector("#wish-result");
+  button.addEventListener("click", () => {
+    if (input.value === "") {
+      result.textContent = "お願いごとを書いてください";
+    } else {
+      result.textContent = "「" + input.value + "」を奉納しました";
+    }
+  });
+</script>`}
+/>
+
+何も書かずに「奉納する」を押すと「お願いごとを書いてください」と表示されます。何か書いてから押すと、その内容が「」で囲まれて表示されます。`input.value === ""`という比較1つで、「まだ何も書かれていない」ことを見分けられます。
+
+<Exercise title="演習1: 好きな屋台を聞く">
+
+`<input id="stall-input">`に打ち込んだ文字の後ろに`"を1つください"`を続けて、`<p id="stall-result">`に表示してください。ボタンは押されたときに動くようにしてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-e"
+  height={180}
+  initialHtml={`<input id="stall-input" type="text" placeholder="屋台の名前">
+<button id="stall-btn">注文する</button>
+<p id="stall-result"></p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの最初の例（名前を呼びかける例）と同じ形です。入力欄・ボタン・結果の段落を`querySelector`で取り、ボタンのクリックの中で`input.value`を使います。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const input = document.querySelector("#stall-input");
+const button = document.querySelector("#stall-btn");
+const result = document.querySelector("#stall-result");
+button.addEventListener("click", () => {
+  result.textContent = input.value + "を1つください";
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<input id="stall-input" type="text" placeholder="屋台の名前">
+<button id="stall-btn">注文する</button>
+<p id="stall-result"></p>
+<script>
+  const input = document.querySelector("#stall-input");
+  const button = document.querySelector("#stall-btn");
+  const result = document.querySelector("#stall-result");
+  button.addEventListener("click", () => {
+    result.textContent = input.value + "を1つください";
+  });
+</script>
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 値段 × 数量">
+
+`<input id="price" value="300">`（1個あたりの値段）と`<input id="qty" value="2">`（数量）を`Number()`で変換して掛け算し、結果を`<p id="total-result">`に`"合計: ◯◯円"`の形で表示してください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-f"
+  height={200}
+  initialHtml={`<input id="price" type="text" value="300">
+<input id="qty" type="text" value="2">
+<button id="calc-btn">計算する</button>
+<p id="total-result"></p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの「たす」ボタンの例と同じ形です。2つの`.value`をそれぞれ`Number()`で変換してから、`+`ではなく`*`で掛け算します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const price = document.querySelector("#price");
+const qty = document.querySelector("#qty");
+const button = document.querySelector("#calc-btn");
+const result = document.querySelector("#total-result");
+button.addEventListener("click", () => {
+  const total = Number(price.value) * Number(qty.value);
+  result.textContent = "合計: " + total + "円";
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<input id="price" type="text" value="300">
+<input id="qty" type="text" value="2">
+<button id="calc-btn">計算する</button>
+<p id="total-result"></p>
+<script>
+  const price = document.querySelector("#price");
+  const qty = document.querySelector("#qty");
+  const button = document.querySelector("#calc-btn");
+  const result = document.querySelector("#total-result");
+  button.addEventListener("click", () => {
+    const total = Number(price.value) * Number(qty.value);
+    result.textContent = "合計: " + total + "円";
+  });
+</script>
+```
+
+そのままボタンを押すと、300 × 2 で「合計: 600円」と表示されます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 空チェックしてから2倍にする">
+
+`<input id="number-input">`が空文字列なら`"数字を入力してください"`、そうでなければ`Number()`で変換して2倍にした数を、`<p id="double-result">`に表示してください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-05-g"
+  height={200}
+  initialHtml={`<input id="number-input" type="text" placeholder="数字">
+<button id="double-btn">2倍にする</button>
+<p id="double-result"></p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの「奉納する」の例（空チェック）と、演習2の「掛け算」の両方を組み合わせます。まず`=== ""`で空かどうかを見て、空でなければ`Number()`で変換して`* 2`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const input = document.querySelector("#number-input");
+const button = document.querySelector("#double-btn");
+const result = document.querySelector("#double-result");
+button.addEventListener("click", () => {
+  if (input.value === "") {
+    result.textContent = "数字を入力してください";
+  } else {
+    result.textContent = Number(input.value) * 2;
+  }
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<input id="number-input" type="text" placeholder="数字">
+<button id="double-btn">2倍にする</button>
+<p id="double-result"></p>
+<script>
+  const input = document.querySelector("#number-input");
+  const button = document.querySelector("#double-btn");
+  const result = document.querySelector("#double-result");
+  button.addEventListener("click", () => {
+    if (input.value === "") {
+      result.textContent = "数字を入力してください";
+    } else {
+      result.textContent = Number(input.value) * 2;
+    }
+  });
+</script>
+```
+
+何も入力せずに押すと「数字を入力してください」、`5`と入力してから押すと`10`と表示されます。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `<input>`は終了タグの無い要素。読み手が打ち込んだ文字は`.value`で読み取れる
+- `.value`は、`type`に関わらず**常に文字列**。数として計算するには`Number()`で変換する
+- `Number()`を忘れると、エラーにならずに文字列の連結になってしまう
+- `.value === ""`で、まだ何も入力されていないかどうかを確かめられる
+
+<Quiz
+  client:visible
+  storageKey="dom-05"
+  questions={[
+    {
+      q: '`<input id="age" value="20">`があるとき、`document.querySelector("#age").value`の型は？',
+      choices: ['number', 'string', 'boolean'],
+      answer: 1,
+      explain: '.valueは、どんなtypeのinputでも常に文字列です。数として使うにはNumber()での変換が必要です。',
+    },
+    {
+      q: '`a.value`が"3"、`b.value`が"4"のとき、`a.value + b.value`の結果は？',
+      choices: ['7', '"34"', 'エラーになる'],
+      answer: 1,
+      explain: '.valueはどちらも文字列なので、+ は足し算ではなく文字列の連結になり、"34"になります。数として足すにはNumber()で変換します。',
+    },
+    {
+      q: '入力欄が空かどうかを確かめる書き方として正しいのはどれ？',
+      choices: [
+        'input.value === null',
+        'input.value === undefined',
+        'input.value === ""',
+      ],
+      answer: 2,
+      explain: '何も入力されていないinputの.valueは、空文字列""です。nullやundefinedにはなりません。',
+    },
+  ]}
+/>

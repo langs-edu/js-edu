@@ -1,0 +1,243 @@
+---
+title: 値の種類——number・string・boolean
+course: hajimete
+order: 4
+description: typeofで値の種類を調べながら、number・string・booleanという型に出会います。型は変数ではなく値のほうについている、というJavaScriptの動的な性格も見ておきます。
+seed: "文字列をもっと自由に——つなげて、埋め込んで、加工する道具です"
+minutes: 25
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 名前がついた値には、種類がある
+
+前回、`const`や`let`で値に名前をつけました。`"りんご飴"`と`3`は、見るからに違う種類の値です。この「種類」のことを**型**と呼びます。JavaScriptには、`typeof`という演算子があり、値の型をその場で確かめられます。
+
+<CodeRunner client:visible storageKey="hajimete-04-a" initialCode={`const kosuu = 3;
+const na = "りんご飴";
+const uritekiru = true;
+console.log(typeof kosuu);
+console.log(typeof na);
+console.log(typeof uritekiru);`} />
+
+出力欄には、`number`・`string`・`boolean`という3つの言葉が並びます。それぞれ、JavaScriptの基本的な型の名前です。
+
+## number——整数も小数も、ひとつの型
+
+`number`は数を表す型です。ここで、他の言語を少しでも触ったことがある人にとっては意外に感じる点があります。**JavaScriptには、整数専用の型と小数専用の型の区別がありません。** `3`も`3.14`も、どちらも同じ`number`型です。
+
+<CodeRunner client:visible storageKey="hajimete-04-b" initialCode={`console.log(typeof 3);
+console.log(typeof 3.14);`} />
+
+両方とも`number`と表示されます。整数か小数かは、値そのものの見た目の違いであって、型としては区別されません。
+
+## string——文字列
+
+`string`は、`"りんご飴"`のように、ダブルクォート（またはシングルクォート）で囲んだ文字の並びです。数がいくつであろうと、クォートで囲めばそれは`string`になります。
+
+<CodeRunner client:visible storageKey="hajimete-04-c" initialCode={`console.log(typeof "3");
+console.log(typeof 3);`} />
+
+`"3"`と`3`は、見た目こそ似ていますが、型はまったく違います。前者は`string`、後者は`number`です。この違いは、この先の計算のところで実感を持って効いてきます。
+
+## boolean——真か偽か
+
+`boolean`は、`true`（真）か`false`（偽）のどちらかしか持てない型です。「営業中かどうか」のような、2択の状態を表すのに使います。`true`・`false`はどちらも小文字で書きます。
+
+## 型は、値のほうについている
+
+一度つけた変数名に、別の型の値を代入し直すとどうなるでしょうか。`let`で試してみます。
+
+<CodeRunner client:visible storageKey="hajimete-04-d" initialCode={`let x = 10;
+console.log(typeof x);
+x = "じゅう";
+console.log(typeof x);`} />
+
+エラーは出ません。`x`の型が`number`から`string`へ、静かに変わっただけです。JavaScriptでは、変数を宣言するときに型を書きません。**型は変数の名前についているのではなく、そのとき代入されている値のほうについています。** `x`という名前が、そのときどきで違う型の値を指し示せる——これがJavaScriptの動的型付けという性質です。
+
+<Callout type="note" title="「型がない」わけではない">
+これは「JavaScriptに型がない」という意味ではありません。値そのものには、確かに`number`や`string`という型があります。ただ、その型を変数の宣言時に固定しないだけです。`typeof x`で聞いているのは、いつも「今`x`が指している値の型」であって、`x`という名前そのものに刻まれた型ではありません。
+</Callout>
+
+## 昔からある書き方——var
+
+ここで、`const`や`let`より古くから存在する`var`という書き方にも、一度だけ触れておきます。
+
+```js
+var mukashi = "古い書き方もできます";
+console.log(mukashi);
+```
+
+`var`も変数を宣言でき、今でも動きます。古いコードの中では今も見かけるので、読めるようにはしておきたい書き方です。ただし、`const`や`let`と比べて挙動にクセがあり、意図しない不具合の原因になりやすいため、**このサイトでは自分から書くことはしません。** 基本は`const`、付け替えたいときは`let`、という前回の方針のままで進めます。
+
+## 0.1 + 0.2 という夜店の手品
+
+数の計算では、ときどき不思議なことが起こります。試してみましょう。
+
+<CodeRunner client:visible storageKey="hajimete-04-e" initialCode={`console.log(0.1 + 0.2);
+console.log(0.1 + 0.2 === 0.3);`} />
+
+出力は、次のようになります。
+
+```console
+0.30000000000000004
+false
+```
+
+`0.1 + 0.2`は、`0.3`ぴったりにはならず、ほんのわずかにずれた値になります。これはJavaScriptに限った不具合ではなく、コンピュータが小数を扱う仕組みそのものに由来する、多くの言語に共通する性質です。仕組みの詳しい説明はここでは深入りしませんが、「小数の計算には、ごくわずかな誤差がつきものだ」ということだけ、誠実に知っておいてください。🏮 種明かしは屋台のこぼれ話「[0.1 + 0.2 の夜店の手品](../../../yatai/08-floating-point/)」でどうぞ。
+
+<Callout type="warn" title="つまずきポイント：小数どうしをぴったり比較しない">
+`0.1 + 0.2 === 0.3`が`false`になるように、小数の計算結果を`===`でぴったり比較すると、期待どおりにならないことがあります。実務では、差がごく小さい範囲に収まっているかどうかで比較する、といった工夫が必要になりますが、このコースの範囲を超えるので、今は「そういう性質がある」と知っておくだけで十分です。
+</Callout>
+
+<Exercise title="演習1: 3つの型を確かめる">
+
+数値・文字列・真偽値の変数をそれぞれ1つずつ`const`で作り、`typeof`でそれぞれの型を出力してください。
+
+<CodeRunner client:visible storageKey="hajimete-04-f" initialCode={`// ここに3つの const 変数と、3つの typeof console.log を書いてみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスン冒頭の`kosuu`・`na`・`uritekiru`の例と同じ形です。値の中身はあなたの好きなものにしてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`const 名前 = 値;`を3回、`console.log(typeof 名前);`を3回書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+const kazu = 7;
+const kotoba = "ラムネ";
+const eigyouchuu = true;
+console.log(typeof kazu);
+console.log(typeof kotoba);
+console.log(typeof eigyouchuu);
+```
+
+`number`・`string`・`boolean`の順に表示されれば成功です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 型が変わる瞬間を観察する">
+
+`atai`という1つの変数に、`let`で数値を代入し、`typeof`で確認したあと、文字列、さらに真偽値と、順番に代入し直しながら、そのたびに`typeof`で型を確認してください。
+
+<CodeRunner client:visible storageKey="hajimete-04-g" initialCode={`// let atai = 数値; から始めて、typeof の確認と再代入を繰り返してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`x`の例と同じ発想です。同じ名前に、違う型の値を順番に代入していきます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`let atai = 100;`→`console.log(typeof atai);`→`atai = "ひゃく";`→`console.log(typeof atai);`→`atai = false;`→`console.log(typeof atai);`という順です。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js
+let atai = 100;
+console.log(typeof atai);
+atai = "ひゃく";
+console.log(typeof atai);
+atai = false;
+console.log(typeof atai);
+```
+
+`number`・`string`・`boolean`の順に表示されます。エラーは一度も出ません。同じ`atai`という名前が、代入するたびに違う型の値を指すようになる様子が観察できたはずです。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 0.1 + 0.2 を、別の組み合わせでも試す">
+
+`0.2 + 0.4`や`0.1 + 0.7`など、別の小数の組み合わせでも、同じような誤差が起きるか試してみてください。
+
+<CodeRunner client:visible storageKey="hajimete-04-h" initialCode={`// 好きな小数どうしの足し算を console.log してみましょう
+`} />
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンで見た`0.1 + 0.2`の例と同じ形で、数値だけ変えてみてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log(0.2 + 0.4);`のように、`console.log`の中に直接計算式を書きます。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js
+console.log(0.2 + 0.4);
+```
+
+組み合わせによっては、`0.6000000000000001`のように、ぴったりにならない結果が出ることがあります。逆に、ぴったり期待どおりの値になる組み合わせもあります。どちらの結果も、どちらも「正しい」動作です。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `typeof`で、値の型をその場で確かめられる
+- `number`は整数も小数もひとつの型。`string`はクォートで囲んだ文字列。`boolean`は`true`/`false`のどちらか
+- 型は変数の名前ではなく、値のほうについている。同じ変数名に、違う型の値を自由に代入し直せる
+- `var`は古いコードで見かける書き方。読めればよく、自分では書かない
+- 小数の計算には、`0.1 + 0.2 === 0.3`が`false`になるような、ごくわずかな誤差がつきものである
+
+<Quiz
+  client:visible
+  storageKey="hajimete-04"
+  questions={[
+    {
+      q: '`3`と`3.14`のtypeofは、それぞれ何になる？',
+      choices: ['int と float', 'どちらも number', 'number と decimal'],
+      answer: 1,
+      explain: 'JavaScriptには整数専用・小数専用の型の区別がなく、どちらも number 型です。',
+    },
+    {
+      q: '`let x = 10;`のあと`x = "じゅう";`と書くとどうなる？',
+      choices: [
+        'エラーになる（型が違うため）',
+        '問題なく代入でき、xの型はstringに変わる',
+        '数値の10のまま変わらない',
+      ],
+      answer: 1,
+      explain: '型は値のほうについているため、同じ変数名に違う型の値を自由に代入し直せます。エラーにはなりません。',
+    },
+    {
+      q: '`0.1 + 0.2 === 0.3`を実行すると、どうなる？',
+      choices: ['true になる', 'false になる', 'エラーになる'],
+      answer: 1,
+      explain: '小数の計算にはごくわずかな誤差が生じるため、0.1 + 0.2 はぴったり 0.3 にはならず、この比較は false になります。',
+    },
+  ]}
+/>

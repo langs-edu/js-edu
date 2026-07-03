@@ -1,0 +1,308 @@
+---
+title: 中身を書き換える
+course: dom
+order: 3
+description: textContentでの文字の書き換えをもう一歩深め、classList.add/remove/toggleで見た目を切り替える方法を学びます。style直接操作という道具の存在にも軽く触れます。
+seed: ページが読み込まれた瞬間の書き換えはできるようになりました。次は、ボタンを押した"その瞬間"に書き換える——イベントの番です。
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+
+## もう一度、textContentで書き換える
+
+前回、`querySelector`で取った要素の`textContent`に代入すると、中身がまるごと置き換わることを見ました。これを使えば、最初に書いておいたHTMLの文字を、JavaScriptが書き換えることができます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-a"
+  height={140}
+  initialHtml={`<p id="status">準備中...</p>
+<script>
+  const status = document.querySelector("#status");
+  status.textContent = "本日20時開店！";
+</script>`}
+/>
+
+ページが読み込まれると、「準備中...」だった文字は「本日20時開店！」に置き換わります。今はページが読み込まれた瞬間に書き換えていますが、次のレッスンでは、これを「ボタンを押した瞬間」に書き換えるやり方に進みます。
+
+## 見た目を切り替える——classList
+
+文字だけでなく、見た目そのものを切り替えたいこともあります。そのための道具が`classList`です。要素の`class`属性を、あとからJavaScriptで付けたり外したりできます。
+
+<Callout type="mame" title="このコースでは、CSSの書き方そのものは教えません">
+`<style>`の中に書く`.highlight { background: #fff3b0; }`のようなルールは、色や背景を決めるCSSという別の言語です。このコースでは「あるクラス名がついていると、こういう見た目になる」という結びつきだけ使い、CSSの文法そのものは扱いません。
+</Callout>
+
+`classList`には主に3つのメソッドがあります。
+
+| メソッド | 動作 |
+|---|---|
+| `classList.add("名前")` | そのクラスを付ける（すでに付いていれば何もしない） |
+| `classList.remove("名前")` | そのクラスを外す（付いていなければ何もしない） |
+| `classList.toggle("名前")` | 付いていれば外し、付いていなければ付ける |
+
+まず`remove`です。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-b"
+  height={140}
+  initialHtml={`<style>
+  .highlight { background: #fff3b0; }
+</style>
+<p id="yatai" class="highlight">りんご飴 300円</p>
+<script>
+  const yatai = document.querySelector("#yatai");
+  yatai.classList.remove("highlight");
+</script>`}
+/>
+
+この段落には、最初`class="highlight"`が付いていて、黄色い背景になるはずでした。しかしJavaScriptが`classList.remove("highlight")`を実行するので、最終的には`highlight`クラスが外れ、背景の色は付きません。
+
+`add`はその逆です。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-c"
+  height={140}
+  initialHtml={`<style>
+  .highlight { background: #fff3b0; }
+</style>
+<p id="yatai">かき氷 350円</p>
+<script>
+  const yatai = document.querySelector("#yatai");
+  yatai.classList.add("highlight");
+</script>`}
+/>
+
+今度は最初から`highlight`クラスは付いていませんが、`classList.add("highlight")`が実行されるので、最終的に黄色い背景が付きます。
+
+`toggle`は、今その要素にクラスが付いているかどうかを見て、自動的に逆を選びます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-d"
+  height={140}
+  initialHtml={`<style>
+  .highlight { background: #fff3b0; }
+</style>
+<p id="yatai" class="highlight">ラムネ 200円</p>
+<script>
+  const yatai = document.querySelector("#yatai");
+  yatai.classList.toggle("highlight");
+</script>`}
+/>
+
+この段落は最初から`highlight`が付いているので、`toggle`は「付いているなら外す」を選び、最終的に黄色い背景は消えます。もし最初から`highlight`が付いていなければ、`toggle`は逆に「付ける」を選んでいたはずです。**今の状態を自分で確かめなくても、trueかfalseで自動的に切り替えてくれる**のが`toggle`の便利さです。次のレッスンでは、これをボタンのクリックと組み合わせて、押すたびに見た目が切り替わる様子を作ります。
+
+<Callout type="note" title="toggleには、強制的に決める書き方もある">
+`classList.toggle("highlight", true)`のように第2引数を渡すと、今の状態に関係なく「trueなら必ず付ける、falseなら必ず外す」という動きになります。「ある条件を満たしていたら、このクラスを付けたい」というときに便利です。
+</Callout>
+
+## style直接操作というもう1つの道具
+
+`classList`のほかに、`el.style.color = "red";`のように、要素の見た目を直接書き換える方法もあります。あらかじめCSSにクラスを用意しておかなくても、その場で色やサイズを指定できます。
+
+ただし、「オンかオフか」のような状態の切り替えには、`classList`で名前の付いたクラスを付け外しする方が、見た目のルールをCSS側にまとめておけて見通しがよくなります。このコースでは深入りしませんが、`style`という直接操作の道具があることだけ、覚えておいてください。
+
+<Exercise title="演習1: textContentで満席を知らせる">
+
+`<p id="seat">空席あります</p>`という段落を、`querySelector`で取得し、`textContent`に`"満席です"`を代入して書き換えてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-e"
+  height={140}
+  initialHtml={`<p id="seat">空席あります</p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`document.querySelector("#seat")`で要素を取り、その`.textContent`に新しい文字列を代入します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const seat = document.querySelector("#seat");
+seat.textContent = "満席です";
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<p id="seat">空席あります</p>
+<script>
+  const seat = document.querySelector("#seat");
+  seat.textContent = "満席です";
+</script>
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: classList.addで売り切れ表示">
+
+`<style>`にはすでに`.soldout { text-decoration: line-through; }`（打ち消し線）というルールが用意されています。`<p id="item">`に`classList.add("soldout")`で、このクラスを付けてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-f"
+  height={140}
+  initialHtml={`<style>
+  .soldout { text-decoration: line-through; }
+</style>
+<p id="item">たこ焼き 500円</p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`classList.add`の例と同じ形です。`querySelector("#item")`で要素を取り、その`classList`に`add`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const item = document.querySelector("#item");
+item.classList.add("soldout");
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<style>
+  .soldout { text-decoration: line-through; }
+</style>
+<p id="item">たこ焼き 500円</p>
+<script>
+  const item = document.querySelector("#item");
+  item.classList.add("soldout");
+</script>
+```
+
+「たこ焼き 500円」の文字に打ち消し線が付きます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: toggleで最初から外す">
+
+`<p id="banner" class="loud">本日限り！</p>`には最初から`loud`クラスが付いています。`classList.toggle("loud")`を1回呼んで、このクラスを外してください（`toggle`が「今付いているものは外す」を選ぶことを確かめる演習です）。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-03-g"
+  height={140}
+  initialHtml={`<style>
+  .loud { background: #ffd6d6; }
+</style>
+<p id="banner" class="loud">本日限り！</p>
+<script>
+  // ここに toggle を1回呼んでください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`toggle`は引数を1つだけ渡すと、今その要素にクラスが付いているかどうかを見て、自動的に逆を選びます。`banner`には最初から`loud`が付いています。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const banner = document.querySelector("#banner");
+banner.classList.toggle("loud");
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<style>
+  .loud { background: #ffd6d6; }
+</style>
+<p id="banner" class="loud">本日限り！</p>
+<script>
+  const banner = document.querySelector("#banner");
+  banner.classList.toggle("loud");
+</script>
+```
+
+最初は`loud`が付いていたので、`toggle`は「外す」を選び、最終的に背景の色は消えます。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `textContent`への代入で、要素の中身の文字をまるごと書き換えられる
+- `classList.add("名前")`はクラスを付ける、`remove("名前")`は外す、`toggle("名前")`は今の状態を見て自動で逆を選ぶ
+- `toggle`に第2引数（true/false）を渡すと、今の状態に関係なく強制的に付ける・外すを選べる
+- `el.style.プロパティ = 値`で見た目を直接書き換える道具もある。オン/オフの切り替えには`classList`の方が見通しがよい
+
+<Quiz
+  client:visible
+  storageKey="dom-03"
+  questions={[
+    {
+      q: '`el.textContent = "こんにちは";`を実行すると、要素の中身はどうなる？',
+      choices: [
+        '元の中身の後ろに「こんにちは」が追加される',
+        '元の中身がすべて消え、「こんにちは」だけになる',
+        '何も変わらない（読み取り専用のため）',
+      ],
+      answer: 1,
+      explain: 'textContentへの代入は、元の中身をすべて置き換えます。追加したい場合は「元のtextContent + 新しい文字」のように自分でつなげる必要があります。',
+    },
+    {
+      q: '要素に`class="on"`が付いているとき、`classList.toggle("on")`を1回呼ぶとどうなる？',
+      choices: [
+        '必ず"on"が付いた状態のままになる',
+        '"on"が外れる',
+        'エラーになる',
+      ],
+      answer: 1,
+      explain: 'toggleは今の状態を見て自動的に逆を選びます。すでに付いているクラスに対してtoggleを呼ぶと、外れます。',
+    },
+    {
+      q: '「オンかオフか」を切り替える見た目の変化に、このレッスンで勧められているのはどちら？',
+      choices: [
+        'あらかじめCSSに用意したクラスを classList で付け外しする',
+        '毎回 el.style で色やサイズを直接指定する',
+        'HTMLを書き直すたびにページを再読み込みする',
+      ],
+      answer: 0,
+      explain: '状態の切り替えには、見た目のルールをCSS側にまとめられるclassListの方が見通しがよいと説明しました。styleでの直接操作もできますが、このコースでは深入りしません。',
+    },
+  ]}
+/>

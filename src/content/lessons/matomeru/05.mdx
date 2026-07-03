@@ -1,0 +1,314 @@
+---
+title: 分割代入と、ちょっと便利な書き方
+course: matomeru
+order: 5
+description: 配列やオブジェクトから値を一度に取り出す分割代入と、コピーや合成に使うスプレッド構文を学びます。読めることが大事で、多用は控えめにという、この縁日の流儀もあわせて伝えます。
+seed: 配列にもオブジェクトにも、値が「ない」ことを表す場面があります。JavaScriptには、その「ない」を表す値がふたつあります。次は、その使い分けです。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 同じアクセスを、何度も書いてきた
+
+前回、`mise.namae`、`mise.nedan`のように、同じ形のアクセスを繰り返し書いてきました。値を1つずつ、名前を指定して取り出す——正しい書き方ですが、キーの数が増えるほど同じような行が並びます。
+
+JavaScriptには、配列やオブジェクトから複数の値をまとめて取り出す、短い書き方があります。**分割代入**です。
+
+## 配列の分割代入
+
+配列の値を、順番どおりに変数へ一気に取り出せます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-a"
+  initialCode={`const yatai = ["りんご飴", 300, 12];
+const [namae, nedan, zaiko] = yatai;
+console.log(namae);
+console.log(nedan);
+console.log(zaiko);`}
+/>
+
+実行すると、下の出力欄にこう表示されます。
+
+```console
+りんご飴
+300
+12
+```
+
+`const [namae, nedan, zaiko] = yatai;`は、`yatai[0]`を`namae`に、`yatai[1]`を`nedan`に、`yatai[2]`を`zaiko`に、まとめて代入しています。配列の分割代入は**位置**で対応します。並べる順番を変えると、対応する値も変わります。
+
+## オブジェクトの分割代入
+
+オブジェクトにも同じ発想の書き方があります。こちらは`{ }`を使い、**キーの名前**で対応します。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-b"
+  initialCode={`const mise = { namae: "たこ焼き", nedan: 500 };
+const { namae, nedan } = mise;
+console.log(namae);
+console.log(nedan);`}
+/>
+
+```console
+たこ焼き
+500
+```
+
+配列の分割代入と違い、オブジェクトの分割代入は`{ nedan, namae }`のように**順番を入れ替えても同じ結果**になります。キーの名前がそのまま変数名になるので、対応がずれる心配がありません。
+
+<Callout type="mame" title="別の変数名で受け取りたいとき">
+`{ namae: miseNamae }`のように書くと、`namae`キーの値を`miseNamae`という別の名前で受け取れます。すでに`namae`という変数を使っていて名前が衝突するときなどに使います。多用すると読みにくくなるので、必要なときだけの技として覚えておけば十分です。
+</Callout>
+
+## for-ofの中で、分割代入する
+
+分割代入は`for-of`とも組み合わせられます。前回の「配列とオブジェクトを組み合わせる」で書いた`mise.namae`・`mise.nedan`は、こう短くできます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-c"
+  initialCode={`const yataiList = [
+  { namae: "りんご飴", nedan: 300 },
+  { namae: "たこ焼き", nedan: 500 },
+];
+for (const { namae, nedan } of yataiList) {
+  console.log(\`\${namae}: \${nedan}円\`);
+}`}
+/>
+
+```console
+りんご飴: 300円
+たこ焼き: 500円
+```
+
+`for (const { namae, nedan } of yataiList)`は、「取り出した1件のオブジェクトから、`namae`と`nedan`をその場で分割代入する」という意味です。`mise`という名前を経由せず、直接キーの値が使えます。
+
+## スプレッド構文——配列をコピーする
+
+`...`（3つのドット）を使うスプレッド構文は、配列やオブジェクトの中身を**展開**します。よく使うのは、コピーを作りながら値を足す場面です。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-d"
+  initialCode={`const original = ["りんご飴", "たこ焼き"];
+const copy = [...original, "金魚すくい"];
+console.log(copy);
+console.log(original);`}
+/>
+
+```console
+[ 'りんご飴', 'たこ焼き', '金魚すくい' ]
+[ 'りんご飴', 'たこ焼き' ]
+```
+
+`[...original, "金魚すくい"]`は、「`original`の中身を全部展開して、そのあとに`"金魚すくい"`を足した、新しい配列」を作ります。レッスン1の`push`とは違い、**元の`original`は変わりません。** 新しい配列を作りたいときと、元の配列を書き換えたいときとで、使い分けます。
+
+## スプレッド構文——オブジェクトを合成する
+
+オブジェクトにも同じ`...`が使えます。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-e"
+  initialCode={`const base = { namae: "りんご飴", nedan: 300 };
+const updated = { ...base, nedan: 350 };
+console.log(updated);
+console.log(base);`}
+/>
+
+```console
+{ namae: 'りんご飴', nedan: 350 }
+{ namae: 'りんご飴', nedan: 300 }
+```
+
+`{ ...base, nedan: 350 }`は、「`base`の中身を全部展開して、そのあとに`nedan: 350`を上書きした、新しいオブジェクト」を作ります。同じキーが後ろにあると、後ろの値が優先されます。元の`base`はそのまま残り、`updated`という別のオブジェクトができました。
+
+<Callout type="note" title="読めることが大事。多用は控えめに">
+分割代入もスプレッド構文も便利ですが、いくつも重ねて使うと、かえって何が起きているか読み取りにくくなります。この縁日では、「繰り返し書いていた同じアクセスを、はっきり短くできる場面」でだけ使い、無理に詰め込まないことをおすすめします。読み手（未来のあなたを含めて）が一目で追える形が、いちばんです。
+</Callout>
+
+<Exercise title="演習1: 配列を分割代入する">
+
+`["たこ焼き", 500, 8]`という配列を、`namae`・`nedan`・`zaiko`という3つの変数に分割代入し、それぞれ表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`const [変数1, 変数2, 変数3] = 配列;`という形です。並べた順番が、そのまま対応します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const yatai = ["たこ焼き", 500, 8];
+const [namae, nedan, zaiko] = yatai;
+console.log(namae);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+const yatai = ["たこ焼き", 500, 8];
+const [namae, nedan, zaiko] = yatai;
+console.log(namae);
+console.log(nedan);
+console.log(zaiko);
+```
+
+```console
+たこ焼き
+500
+8
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: オブジェクトを分割代入する">
+
+`{ namae: "金魚すくい", nedan: 300 }`というオブジェクトを分割代入し、`${namae}は${nedan}円です`という形で表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-ex2"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`const { namae, nedan } = オブジェクト;`のあと、テンプレートリテラルで組み立てます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const mise = { namae: "金魚すくい", nedan: 300 };
+const { namae, nedan } = mise;
+console.log(`${namae}は${nedan}円です`);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const mise = { namae: "金魚すくい", nedan: 300 };
+const { namae, nedan } = mise;
+console.log(`${namae}は${nedan}円です`);
+```
+
+```console
+金魚すくいは300円です
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: スプレッドでコピーを作る">
+
+`["りんご飴", "たこ焼き"]`という配列`original`をスプレッド構文でコピーし、コピーの方にだけ`"わたあめ"`を追加してください。`copy`と`original`の両方を表示し、`original`が変わっていないことを確かめてください。
+
+<CodeRunner
+  client:visible
+  storageKey="matomeru-05-ex3"
+  initialCode={`// ここに書いてみましょう
+const original = ["りんご飴", "たこ焼き"];
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+本文の`copy`の例と同じ形です。`[...original, "追加する値"]`で新しい配列を作ります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const copy = [...original, "..."];
+console.log(copy);
+console.log(original);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const original = ["りんご飴", "たこ焼き"];
+const copy = [...original, "わたあめ"];
+console.log(copy);
+console.log(original);
+```
+
+```console
+[ 'りんご飴', 'たこ焼き', 'わたあめ' ]
+[ 'りんご飴', 'たこ焼き' ]
+```
+
+`copy`には`"わたあめ"`が増えていますが、`original`は最初の2つのままです。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- 配列の分割代入`const [a, b] = 配列;`は**位置**で対応する
+- オブジェクトの分割代入`const { a, b } = オブジェクト;`は**キーの名前**で対応する。順番は関係ない
+- `for (const { a, b } of 配列)`のように、for-ofと組み合わせられる
+- スプレッド構文`...`は、配列やオブジェクトの中身を展開してコピーや合成をする。元の値は変わらない
+- 分割代入もスプレッド構文も、読みやすさを保てる範囲で使う
+
+<Quiz
+  client:visible
+  storageKey="matomeru-05"
+  questions={[
+    {
+      q: '配列の分割代入`const [a, b] = [1, 2];`とオブジェクトの分割代入`const { x, y } = { y: 2, x: 1 };`について正しいのは？',
+      choices: ['どちらも位置で対応する', '配列は位置、オブジェクトはキー名で対応する', 'どちらもキー名で対応する'],
+      answer: 1,
+      explain: '配列の分割代入は並べた順番（位置）で対応しますが、オブジェクトの分割代入はキーの名前で対応するので、順番を入れ替えても結果は同じです。',
+    },
+    {
+      q: '`const copy = [...original, "x"];` を実行したあと、`original`はどうなる？',
+      choices: ['"x"が追加された状態になる', '変化しない（新しい配列copyが作られるだけ）', 'エラーになる'],
+      answer: 1,
+      explain: 'スプレッド構文は元の配列を展開して新しい配列を作るだけで、元の配列そのものは変更しません。',
+    },
+    {
+      q: 'この縁日での分割代入・スプレッド構文の使い方の流儀として正しいのは？',
+      choices: ['読めるかぎり、できるだけ深く重ねて使う', '繰り返しをはっきり短くできる場面で使い、無理に詰め込まない', 'このサイトでは使用禁止'],
+      answer: 1,
+      explain: '便利な書き方ですが、重ねすぎると読みにくくなります。読み手が一目で追える範囲で使うのがこの縁日の流儀です。',
+    },
+  ]}
+/>

@@ -1,0 +1,348 @@
+---
+title: === と、真偽のかたち
+course: nagare
+order: 2
+description: 前回さらっと使った===を、正面から掘り下げます。よく似た==という古い演算子との違い、そしてifの中で値がtrueかfalseかに変わるtruthy・falsyという性質に出会います。
+seed: 分岐はできるようになりました。次はもう一つの流れの作り方——同じ処理をくりかえす、whileです。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## ===という約束
+
+前回、比較に`===`を使いました。ここまでは特に説明せずに使ってきましたが、実は`===`という書き方には理由があります。JavaScriptには、等しいかどうかを調べる演算子が**2種類**あるのです。このレッスンでは、その正体を確かめます。
+
+## ==という、もうひとつの等号
+
+`===`より前から存在するのが、`==`です。試してみましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-a"
+  initialCode={`console.log("1" == 1);
+console.log("1" === 1);
+console.log(0 == false);
+console.log(0 === false);`}
+/>
+
+```console
+true
+false
+true
+false
+```
+
+`"1"`は文字列、`1`は数値です。型がまったく違うのに、`==`は`true`を返しました。`==`は、比べる前にこっそり型を変換してから比べる演算子だからです。`0 == false`も同じ理由で`true`になります——数値の`0`と真偽値の`false`という、別の型どうしです。
+
+一方`===`は、型変換をいっさいしません。**型も値も両方一致していないと`true`にならない。** だから`"1" === 1`は`false`です。
+
+<Callout type="warn" title="つまずきポイント：==は読めるとよいが、書かない">
+`==`は今でも動きますし、古いコードでは今も見かけます。読めることは大事です。でも、これから自分で書くときは`===`を使ってください。`==`が行う型変換のルールは複雑で、`"" == 0`のように直感に反する`true`も生まれます。「型がゆるく変換されて比べられる」という性質そのものが、意図しないバグの温床になりやすいのです。**このサイトでは、常に`===`（と`!==`）だけを書きます。**
+</Callout>
+
+`==`が生まれた歴史と、なぜ今も残っているのかは、[🏮 屋台のこぼれ話「==と===の物語」](../../../yatai/09-equality/)で詳しく扱っています。
+
+## truthyとfalsy——trueでもfalseでもない値が、ifの中で化ける
+
+`if`の`( )`の中には、`boolean`型の値しか置けないと思うかもしれません。でも実際には、数値でも文字列でも、何でも置けます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-b"
+  initialCode={`if (0) {
+  console.log("実行される");
+} else {
+  console.log("実行されない");
+}
+
+if ("") {
+  console.log("実行される");
+} else {
+  console.log("実行されない");
+}
+
+if ("0") {
+  console.log("実行される");
+} else {
+  console.log("実行されない");
+}`}
+/>
+
+```console
+実行されない
+実行されない
+実行される
+```
+
+`if`は`( )`の中身が`boolean`でなければ、自動的に`true`か`false`に変換してから判断します。`0`は`false`扱い、`""`（空文字列）も`false`扱い。でも`"0"`——`0`という文字が1文字入った文字列——は空ではないので`true`扱いです。数字の`0`と、文字列の`"0"`とで結果が変わる、これも型がからむ落とし穴です。
+
+`false`として扱われる値は、次の5つだけです。これを**falsy**と呼びます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-c"
+  initialCode={`console.log(Boolean(0));
+console.log(Boolean(""));
+console.log(Boolean(null));
+console.log(Boolean(undefined));
+console.log(Boolean(NaN));`}
+/>
+
+```console
+false
+false
+false
+false
+false
+```
+
+`Boolean()`は、値を強制的に`true`か`false`に変換する関数です。falsyな値は`0`・`""`・`null`・`undefined`・`NaN`の5つだけ——**それ以外の値はすべてtruthy（true扱い）**です。`"0"`も`" "`（スペース1つ）も、空でない文字列だからtruthyになります。
+
+## if (name)という慣習
+
+truthy・falsyを知ると、こんな書き方が読めるようになります。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-d"
+  initialCode={`const namae = "";
+
+if (namae) {
+  console.log(\`こんにちは、\${namae}さん\`);
+} else {
+  console.log("名前が入力されていません");
+}`}
+/>
+
+```console
+名前が入力されていません
+```
+
+`if (namae)`は、`namae === ""`のような比較を書かなくても、「`namae`に何か中身があるかどうか」を短く判定できます。`namae`を`"コウタ"`に書き換えて実行すると、今度は`こんにちは、コウタさん`と表示されます。中身が入っているかどうかをざっくり調べたいとき、JSのコードでよく見かける書き方です。
+
+<Callout type="mame" title="NaN === NaN は false">
+falsyな値の中でも`NaN`だけは、ちょっと変わった性質があります。`NaN === NaN`は`false`になるのです。「Not a Number」自身とすら等しくない——コース1の06で出会った`NaN`の奇妙さは、こんなところにも顔を出します。値が`NaN`かどうかを調べたいときは`===`ではなく、専用の`Number.isNaN()`という関数を使います（名前だけ、ここでは覚えなくて大丈夫です）。
+</Callout>
+
+<Exercise title="演習1: 空文字列はfalsy">
+
+`zaiko`という文字列の変数に空文字列`""`を代入し、`if (zaiko)`で中身があるかどうかを判定してください。中身があれば`在庫あり: ` に続けて`zaiko`を、なければ`在庫なし`と表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-ex1"
+  initialCode={`// ここに書いてみましょう
+const zaiko = "";
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+空文字列`""`はfalsyです。`if (zaiko)`は「zaikoに中身があるか」を判定します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const zaiko = "";
+
+if (zaiko) {
+  console.log("...");
+} else {
+  console.log("在庫なし");
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+const zaiko = "";
+
+if (zaiko) {
+  console.log(`在庫あり: ${zaiko}`);
+} else {
+  console.log("在庫なし");
+}
+```
+
+```console
+在庫なし
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: ==を===に書き換える">
+
+次のコードは`==`を使っています。`===`に書き換えると結果はどうなるか、実際に確かめてください。
+
+```js title="Before.js"
+const ten = 10;
+
+if (ten == "10") {
+  console.log("10点です");
+} else {
+  console.log("10点ではありません");
+}
+```
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-ex2"
+  initialCode={`// ==を===に書き換えて実行してみましょう
+const ten = 10;
+
+if (ten == "10") {
+  console.log("10点です");
+} else {
+  console.log("10点ではありません");
+}
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`ten`は数値の`10`、`"10"`は文字列です。`==`は型を変換してから比べるので一致しますが、`===`は型変換をしません。演算子を変えるだけで結果が変わるかもしれません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+if (ten === "10") {
+  console.log("...");
+} else {
+  console.log("...");
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+const ten = 10;
+
+console.log(ten == "10");
+console.log(ten === "10");
+```
+
+```console
+true
+false
+```
+
+`===`に書き換えると結果が`false`に変わってしまいました。`ten`（数値）と`"10"`（文字列）は型が違うからです。**演算子を`===`に変えるだけでは不十分で、比べる値どうしの型も合わせる必要があります。** 型を揃えるなら`ten === 10`と書くのが正しい書き換えです。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 在庫チェックを、truthyとelse ifで書く">
+
+`zaiko`という数値の変数（在庫数）から、`0`（falsy）なら`売り切れ`、`5`未満なら`残りわずか`、それ以外は`在庫あり`と表示してください。`!`（否定）とelse ifを組み合わせます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-02-ex3"
+  initialCode={`// ここに書いてみましょう
+const zaiko = 3;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`!zaiko`は「zaikoがfalsyなら`true`」という意味です。`zaiko`が`0`のときだけ`!zaiko`が`true`になります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let hyouji;
+
+if (!zaiko) {
+  hyouji = "売り切れ";
+} else if (zaiko < 5) {
+  hyouji = "...";
+} else {
+  hyouji = "...";
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+const zaiko = 3;
+let hyouji;
+
+if (!zaiko) {
+  hyouji = "売り切れ";
+} else if (zaiko < 5) {
+  hyouji = "残りわずか";
+} else {
+  hyouji = "在庫あり";
+}
+
+console.log(hyouji);
+```
+
+```console
+残りわずか
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `==`は型を変換してから比べる古い演算子。`"1" == 1`は`true`になる。読めるとよいが、自分では書かない
+- `===`は型も値も両方一致していないと`true`にならない。このサイトでは常に`===`（と`!==`）を使う
+- `if`の`( )`の中身は、`boolean`でなくても自動的にtrue/falseへ変換される。falsyなのは`0`・`""`・`null`・`undefined`・`NaN`の5つだけで、それ以外はすべてtruthy
+- `if (name)`は「中身があるかどうか」を短く判定する、JSでよく見る慣習
+- `NaN === NaN`は`false`になる。自分自身とすら一致しない、`NaN`だけの奇妙な性質
+
+<Quiz
+  client:visible
+  storageKey="nagare-02"
+  questions={[
+    {
+      q: '`"1" == 1` と `"1" === 1` の結果の組み合わせとして正しいのは？',
+      choices: ['true, true', 'true, false', 'false, true'],
+      answer: 1,
+      explain: '==は型変換してから比べるのでtrue、===は型も値も一致しないとtrueにならないのでfalseです。',
+    },
+    {
+      q: '次のうち、if文の中でfalsy（false扱い）になるのはどれ？',
+      choices: ['"0"（文字列）', '0（数値）', '"あ"'],
+      answer: 1,
+      explain: 'falsyなのは0・""・null・undefined・NaNの5つだけです。"0"は空でない文字列なのでtruthyです。',
+    },
+    {
+      q: '`if (namae)` という書き方の意図として正しいのは？',
+      choices: ['namaeがtrueかfalseかを直接調べている', 'namaeに中身があるか（falsyでないか）を調べている', 'namaeの型を調べている'],
+      answer: 1,
+      explain: 'namaeが空文字列やundefinedなどfalsyでなければtruthyとして扱われる、という慣習を利用した書き方です。',
+    },
+  ]}
+/>

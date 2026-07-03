@@ -1,0 +1,382 @@
+---
+title: 手順に名前をつける（関数）
+course: nagare
+order: 5
+description: 何度も使う手順に名前をつけて、呼び出せるようにする関数を学びます。引数・return・returnがなければundefinedが返るという最重要のつまずきポイント、デフォルト引数まで扱います。
+seed: 関数の中で使った名前は、外からどこまで見える？次は、名前の見える範囲——スコープの話です。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 手順に、名前をつける
+
+ここまでで、分岐とくりかえしを覚えました。もう1つ、プログラムを書きやすくする道具があります。「いらっしゃい、縁日へ」と表示する処理を、何度も使いたくなったとします。そのたびに`console.log(...)`をコピーして貼り付けるのは、だんだん面倒になってきます。同じ手順に**名前をつけて**、その名前を呼ぶだけで実行できたら便利です。それが**関数**です。
+
+## function宣言の基本
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-a"
+  initialCode={`function aisatsu() {
+  console.log("いらっしゃい、縁日へ");
+}
+
+aisatsu();
+aisatsu();`}
+/>
+
+```console
+いらっしゃい、縁日へ
+いらっしゃい、縁日へ
+```
+
+`function 名前() { ... }`で、`{ }`の中身に`名前`という名前をつけています。この時点では、まだ`{ }`の中身は実行されません。`aisatsu();`のように名前を書いて`( )`をつける——これを**呼び出す**と呼びます——ことで、初めて中身が実行されます。同じ関数を、必要なだけ何度でも呼び出せます。
+
+## 引数——呼び出すたびに違う値を渡す
+
+いつも同じ動きしかしない関数は、あまり便利ではありません。呼び出すたびに違う値を渡して、動きを変えられるようにしましょう。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-b"
+  initialCode={`function yobu(namae) {
+  console.log(\`\${namae}さん、こちらへどうぞ\`);
+}
+
+yobu("コウタ");
+yobu("あかり");`}
+/>
+
+```console
+コウタさん、こちらへどうぞ
+あかりさん、こちらへどうぞ
+```
+
+`function yobu(namae)`の`namae`を**引数**（ひきすう）と呼びます。呼び出す側が`yobu("コウタ")`のように渡した値が、関数の中で`namae`という名前で使えるようになります。引数はカンマで区切って複数渡せます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-c"
+  initialCode={`function kuku(dan, i) {
+  console.log(\`\${dan} x \${i} = \${dan * i}\`);
+}
+
+kuku(3, 4);`}
+/>
+
+```console
+3 x 4 = 12
+```
+
+## return——結果を持ち帰る
+
+関数はただ表示するだけでなく、計算した**結果を呼び出し元に返す**こともできます。それが`return`です。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-d"
+  initialCode={`function tasu(a, b) {
+  return a + b;
+}
+
+const kekka = tasu(3, 4);
+console.log(kekka);`}
+/>
+
+```console
+7
+```
+
+`return a + b;`は、「`a + b`を計算した結果を、この関数の呼び出し元に持ち帰る」という意味です。`tasu(3, 4)`という呼び出し全体が、`7`という値そのものに置き換わります。だから`const kekka = tasu(3, 4);`で、`kekka`に`7`が代入できます。
+
+`return`には、もう1つ大事な働きがあります。**`return`が実行された瞬間、関数はそこで終わります。** それより下に書かれた行は実行されません。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-e"
+  initialCode={`function hantei(ten) {
+  if (ten >= 60) {
+    return "合格";
+  }
+  return "不合格";
+}
+
+console.log(hantei(75));
+console.log(hantei(40));`}
+/>
+
+```console
+合格
+不合格
+```
+
+`hantei(75)`では、`ten >= 60`が`true`なので`return "合格";`が実行され、その時点で関数を抜けます。下の`return "不合格";`までは進みません。`hantei(40)`では`if`の中の`return`が実行されないので、最後の`return "不合格";`が結果になります。
+
+## returnがなければ、undefinedが返る
+
+ここが、関数でいちばんつまずきやすいポイントです。`return`を書かなかった関数を呼び出すと、何が返ってくるでしょうか。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-f"
+  initialCode={`function kansuu() {
+  console.log("実行しました");
+}
+
+const kekka = kansuu();
+console.log(kekka);`}
+/>
+
+```console
+実行しました
+undefined
+```
+
+`kansuu`は`console.log`を実行するだけで、`return`を書いていません。**JavaScriptでは、`return`を書かない関数は自動的に`undefined`を返します。** エラーにはなりません——「値を返し忘れました」と教えてはくれず、静かに`undefined`が流れていきます。
+
+これがどんな事故につながるか、見てみましょう。
+
+```js title="Bug.js"
+function tasuWasure(a, b) {
+  const goukei = a + b;
+}
+
+console.log(tasuWasure(3, 4));
+```
+
+```console
+undefined
+```
+
+`goukei`を計算はしていますが、`return goukei;`を書き忘れています。だから`tasuWasure(3, 4)`は`7`ではなく`undefined`を返します。計算そのものは正しいのに、結果を持ち帰るのを忘れただけで、呼び出し元は`undefined`しか受け取れません。
+
+<Callout type="warn" title="つまずきポイント：計算はしたのに、returnを忘れる">
+関数の中で値を計算しても、`return`しなければ呼び出し元には何も伝わりません。「関数を書いたのに、結果が`undefined`になる」というバグに出会ったら、まず`return`を書き忘れていないかを疑ってください。このサイトでは、値を返すつもりの関数には必ず`return`を書きます。
+</Callout>
+
+## デフォルト引数
+
+引数が渡されなかったときのために、あらかじめ既定値を決めておけます。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-g"
+  initialCode={`function aisatsu2(namae = "お客さま") {
+  console.log(\`\${namae}、いらっしゃい\`);
+}
+
+aisatsu2();
+aisatsu2("コウタ");`}
+/>
+
+```console
+お客さま、いらっしゃい
+コウタ、いらっしゃい
+```
+
+`namae = "お客さま"`のように、引数の後ろに`= 既定値`をつけると、呼び出し側が値を渡さなかったときにその既定値が使われます。`aisatsu2()`のように何も渡さなければ`"お客さま"`、`aisatsu2("コウタ")`のように渡せばその値が使われます。
+
+<Exercise title="演習1: 大きいほうを返す関数">
+
+`ookiiHou`という名前の関数を作ってください。2つの数値`a`・`b`を引数に受け取り、大きいほうを`return`してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-ex1"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`if (a >= b)`が`true`なら`a`を、そうでなければ`b`を`return`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function ookiiHou(a, b) {
+  if (a >= b) {
+    return a;
+  }
+  return b;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+function ookiiHou(a, b) {
+  if (a >= b) {
+    return a;
+  }
+  return b;
+}
+
+console.log(ookiiHou(3, 7));
+```
+
+```console
+7
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: returnし忘れたバグを直す">
+
+次の関数は、掛け算の結果を`goukei`に計算しているのに、呼び出すと`undefined`が表示されてしまいます。`return`を追加して直してください。
+
+```js title="Before.js"
+function kakeru(a, b) {
+  const goukei = a * b;
+}
+
+console.log(kakeru(4, 5));
+```
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-ex2"
+  initialCode={`// returnを追加して直してみましょう
+function kakeru(a, b) {
+  const goukei = a * b;
+}
+
+console.log(kakeru(4, 5));
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`goukei`を計算するところまではできています。その`goukei`を`return`していないので、関数はその値を呼び出し元に持ち帰れません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function kakeru(a, b) {
+  const goukei = a * b;
+  return goukei;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+function kakeru(a, b) {
+  return a * b;
+}
+
+console.log(kakeru(4, 5));
+```
+
+```console
+20
+```
+
+`goukei`という変数を経由せず、`return a * b;`のように計算結果をそのまま返しても構いません。どちらも同じ結果になります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: デフォルト引数で掛け声">
+
+`yobikake`という関数を作ってください。引数`kakegoe`を受け取り、`kakegoe`のうしろに`！`をつけて表示します。`kakegoe`のデフォルト値は`"わっしょい"`にしてください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-05-ex3"
+  initialCode={`// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+引数のうしろに`= "わっしょい"`をつけると、デフォルト値になります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function yobikake(kakegoe = "わっしょい") {
+  console.log(`${kakegoe}！`);
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+function yobikake(kakegoe = "わっしょい") {
+  console.log(`${kakegoe}！`);
+}
+
+yobikake();
+yobikake("そいや");
+```
+
+```console
+わっしょい！
+そいや！
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `function 名前(引数) { ... }`で手順に名前をつけ、`名前(値)`で呼び出す
+- 引数は呼び出すたびに違う値を渡せる。カンマで区切って複数渡せる
+- `return 値;`は、結果を呼び出し元に持ち帰り、その場で関数を終わらせる
+- **`return`を書かない関数は、エラーにならず自動的に`undefined`を返す。** 計算しても`return`し忘れると、結果は`undefined`になる
+- 引数に`= 既定値`をつけると、渡されなかったときの値（デフォルト引数）を決められる
+
+<Quiz
+  client:visible
+  storageKey="nagare-05"
+  questions={[
+    {
+      q: '関数の中でreturnを一度も書かなかった場合、呼び出した結果はどうなる？',
+      choices: ['SyntaxErrorになる', 'undefinedになる', '最後に計算した値が自動的に返る'],
+      answer: 1,
+      explain: 'JSではreturnを書かない関数はエラーにならず、自動的にundefinedを返します。',
+    },
+    {
+      q: 'return が実行されたときの動きとして正しいのは？',
+      choices: ['それ以降の行も含めて全部実行してから関数を終える', 'その場で値を持ち帰り、関数を終える', '何も起きず次の行に進む'],
+      answer: 1,
+      explain: 'returnが実行された瞬間、関数はそこで終わります。それより下の行は実行されません。',
+    },
+    {
+      q: 'function aisatsu2(namae = "お客さま") { ... } を aisatsu2() のように引数なしで呼び出すと？',
+      choices: ['エラーになる', 'namaeはundefinedになる', 'namaeは"お客さま"になる'],
+      answer: 2,
+      explain: '引数に= 既定値をつけておくと、値が渡されなかったときにその既定値が使われます。',
+    },
+  ]}
+/>

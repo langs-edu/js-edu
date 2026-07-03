@@ -1,0 +1,321 @@
+---
+title: 要素を取ってくる
+course: dom
+order: 2
+description: document.querySelectorで、木の中から欲しい要素を1つだけ選び出す方法を学びます。idとclassでの探し方、textContentで中身を読む方法、そして見つからなかったときに返るnullの扱いです。
+seed: 欲しい要素は取れるようになりました。次は、その中身を書き換えて、ページの見た目そのものを変えていきましょう。
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## 木の中から、1つだけ選ぶ
+
+前回、`document`が木の入口だと分かりました。ここから先へ進むための道具が`document.querySelector`です。
+
+```js nocheck
+document.querySelector(セレクタの文字列)
+```
+
+「セレクタ」には、CSSと同じ書き方の文字列を渡します。このコースで使うのは、次の3つの最小限の形だけです。
+
+| 書き方 | 意味 | 例 |
+|---|---|---|
+| `"p"` | タグ名で探す | `<p>`を探す |
+| `"#id名"` | idで探す | `id="greeting"`の要素を探す |
+| `".class名"` | classで探す | `class="yatai"`の要素を探す |
+
+見つかった要素の中身の文字を読み書きするには、`textContent`というプロパティを使います。読めば中の文字が返り、代入すればその要素の中身がまるごと書き換わります。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-a"
+  height={160}
+  initialHtml={`<p id="greeting">こんばんは</p>
+<script>
+  const p = document.querySelector("#greeting");
+  p.textContent = "いらっしゃい、縁日へ";
+</script>`}
+/>
+
+ページが読み込まれると、最初にHTMLへ書いた「こんばんは」ではなく、「いらっしゃい、縁日へ」が表示されます。JavaScriptが`document.querySelector("#greeting")`で段落を見つけ、`textContent`への代入で中身を上書きしたからです。
+
+## querySelectorは、最初の1つだけを返す
+
+`querySelector`という名前の通り、これは**1つの要素だけ**を探す道具です。同じタグや同じclassの要素が複数あっても、返ってくるのは文書の中で一番先に現れた1つだけです。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-b"
+  height={220}
+  initialHtml={`<ul>
+  <li>りんご飴</li>
+  <li>金魚すくい</li>
+  <li>ラムネ</li>
+</ul>
+<p id="first-item"></p>
+<script>
+  const first = document.querySelector("li");
+  const result = document.querySelector("#first-item");
+  result.textContent = "最初のliは: " + first.textContent;
+</script>`}
+/>
+
+`<li>`は3つありますが、`document.querySelector("li")`はタグ名だけを見て、一番上の「りんご飴」だけを返します。classでも同じことが起きます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-c"
+  height={200}
+  initialHtml={`<p class="yatai">りんご飴 300円</p>
+<p class="yatai">金魚すくい 500円</p>
+<p class="yatai">ラムネ 200円</p>
+<script>
+  const first = document.querySelector(".yatai");
+  first.textContent = first.textContent + "（本日の一押し）";
+</script>`}
+/>
+
+3つとも`class="yatai"`を持っていますが、書き換わるのは一番上の「りんご飴」だけです。「複数まとめて取りたい」場面もいずれ出てきますが、このコースでは`querySelector`——1つだけ選ぶ道具——を中心に進めます。
+
+## 見つからなかったら、null
+
+探している`id`や`class`が文書のどこにも無かったら、`querySelector`はエラーにはならず、**null**を返します。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-d"
+  height={140}
+  initialHtml={`<p id="result">確認中...</p>
+<script>
+  const missing = document.querySelector("#nonexistent");
+  const result = document.querySelector("#result");
+  if (missing === null) {
+    result.textContent = "見つかりませんでした（null）";
+  } else {
+    result.textContent = "見つかりました";
+  }
+</script>`}
+/>
+
+`#nonexistent`という`id`は、このHTMLのどこにも書かれていません。だから`missing`にはnullが入り、「見つかりませんでした」の方が表示されます。
+
+コース3で、「ない」を表す値がundefinedとnullの2つあると学びました。存在しないオブジェクトのキーはundefinedでしたが、**querySelectorが「見つからなかった」ことを表すときはnull**です。名前は違っても、どちらも「そこには値が無い」という点は同じです。
+
+<Callout type="warn" title="つまずきポイント：nullのプロパティを読もうとすると止まる">
+nullは「値が無い」ことを表す値そのものなので、`null.textContent`のようにその先のプロパティを読もうとすると、TypeErrorで止まります。`querySelector`の結果をそのまま使う前に、見つかったかどうかを確かめる習慣が大事です。
+</Callout>
+
+<CodeRunner
+  client:visible
+  storageKey="dom-02-e"
+  expectError
+  initialCode={`// querySelectorが「見つからなかった」ときは、nullが返ります
+const el = null;
+el.textContent;`}
+/>
+
+実行すると、`TypeError: Cannot read properties of null (reading 'textContent')`というエラーで止まります。「nullの中のtextContentを読もうとしたが、nullには中身が無い」という意味です。
+
+<Callout type="mame" title="安全弁を思い出す: オプショナルチェーン">
+コース3で見た`?.`を使うと、`document.querySelector("#nonexistent")?.textContent`のように書けます。見つからなければエラーにならず、undefinedになるだけで済みます。見つかるかどうか自信が無いときの安全弁として、覚えておいて損はありません。
+</Callout>
+
+<Exercise title="演習1: idで探して書き換える">
+
+`<p id="price">準備中</p>`という段落を、`querySelector("#price")`で取得し、`textContent`に`"300円"`を代入して書き換えてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-f"
+  height={140}
+  initialHtml={`<p id="price">準備中</p>
+<script>
+  // ここに querySelector と textContent への代入を書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの最初の例と同じ形です。`document.querySelector("#price")`で要素を取り、その`.textContent`に新しい文字列を代入します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const p = document.querySelector("#price");
+p.textContent = "300円";
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<p id="price">準備中</p>
+<script>
+  const p = document.querySelector("#price");
+  p.textContent = "300円";
+</script>
+```
+
+ページが読み込まれると、「準備中」が「300円」に書き換わります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: classは最初の1つだけ">
+
+3つの`<p class="omikuji">`のうち、最初の1つだけの`textContent`の末尾に`"（大吉）"`を追加してください。残り2つはそのままにしてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-g"
+  height={200}
+  initialHtml={`<p class="omikuji">1本目</p>
+<p class="omikuji">2本目</p>
+<p class="omikuji">3本目</p>
+<script>
+  // ここに書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`document.querySelector(".omikuji")`は、3つのうち最初の要素だけを返します。それを変数に受け取り、`textContent`を「今の中身 + 追加したい文字」で上書きします。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const first = document.querySelector(".omikuji");
+first.textContent = first.textContent + "（大吉）";
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<p class="omikuji">1本目</p>
+<p class="omikuji">2本目</p>
+<p class="omikuji">3本目</p>
+<script>
+  const first = document.querySelector(".omikuji");
+  first.textContent = first.textContent + "（大吉）";
+</script>
+```
+
+「1本目（大吉）」だけが表示され、「2本目」「3本目」はそのままです。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: nullを確かめてから使う">
+
+`querySelector("#not-here")`の結果を変数に受け取り、`=== null`かどうかで分岐して、見つからなかった場合は`"該当なし"`、見つかった場合はその`textContent`を、`<p id="output">`に表示してください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-02-h"
+  height={160}
+  initialHtml={`<p id="output">確認中...</p>
+<script>
+  // querySelector("#not-here") の結果が null かどうかで分岐してください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの「見つからなかったら、null」の例と同じ形です。取得した結果を`=== null`で比べる`if`文を書きます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const el = document.querySelector("#not-here");
+const output = document.querySelector("#output");
+if (el === null) {
+  output.textContent = "該当なし";
+} else {
+  output.textContent = el.textContent;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<p id="output">確認中...</p>
+<script>
+  const el = document.querySelector("#not-here");
+  const output = document.querySelector("#output");
+  if (el === null) {
+    output.textContent = "該当なし";
+  } else {
+    output.textContent = el.textContent;
+  }
+</script>
+```
+
+`#not-here`という`id`はこのHTMLに存在しないので、`el`にはnullが入り、「該当なし」が表示されます。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `document.querySelector(セレクタ)`は、木の中から条件に合う**最初の1つ**の要素を返す
+- セレクタは`"p"`（タグ名）・`"#id名"`・`".class名"`の3つの最小限の書き方を使う
+- `textContent`で要素の中身を読み書きできる。代入すると中身がまるごと置き換わる
+- 見つからなかったときはエラーではなく**null**が返る。nullのプロパティを読もうとするとTypeErrorで止まる
+- 使う前に`=== null`で確かめるか、`?.`で安全に読む
+
+<Quiz
+  client:visible
+  storageKey="dom-02"
+  questions={[
+    {
+      q: 'HTMLの中に`class="yatai"`を持つ要素が3つあるとき、`document.querySelector(".yatai")`は何を返す？',
+      choices: [
+        '3つとも入った配列のようなもの',
+        '文書の中で最初に現れた1つの要素',
+        'エラーになる',
+      ],
+      answer: 1,
+      explain: 'querySelectorは複数あっても常に最初の1つだけを返します。全部まとめて取りたい場合は別の道具（querySelectorAll）が必要ですが、このコースでは扱いません。',
+    },
+    {
+      q: '`document.querySelector("#missing")`に対応するidの要素が文書に無いとき、返る値は？',
+      choices: ['undefined', 'null', '空文字列 ""'],
+      answer: 1,
+      explain: 'querySelectorが見つけられなかったときは、nullが返ります。存在しないオブジェクトのキーがundefinedになるのとは、別の「ない」の表し方です。',
+    },
+    {
+      q: '`id="menu"`の要素を選ぶセレクタの書き方はどれ？',
+      choices: ['"menu"', '".menu"', '"#menu"'],
+      answer: 2,
+      explain: 'idで探すときは、先頭に # をつけます。タグ名ならそのまま、classなら先頭に . をつけます。',
+    },
+  ]}
+/>

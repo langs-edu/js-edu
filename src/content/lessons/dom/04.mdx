@@ -1,0 +1,337 @@
+---
+title: イベント——押されたら、動く
+course: dom
+order: 4
+description: addEventListenerで、クリックという「あとで起きること」に応じてDOMを書き換える方法を学びます。コース4で学んだ「関数を値として渡す」が、ここで実際に使われる場面です。
+seed: ボタンを押すと反応するページが作れるようになりました。次は、そのボタンの相棒——入力欄——から、読み手の言葉を受け取ります。
+minutes: 22
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import HtmlRunner from '../../../components/islands/HtmlRunner';
+
+## これまでは、読み込まれた瞬間だけ
+
+前回までのHtmlRunnerは、どれもページが読み込まれた**その瞬間**に一度だけ動くコードでした。でも本物のWebページは、ボタンを押す、文字を入力する、そういった読み手の**あとからの行動**に応えます。この「あとで起きること」を**イベント**と呼び、それに応じて動く仕組みが`addEventListener`です。
+
+```js nocheck
+要素.addEventListener("イベント名", 呼ばれる関数)
+```
+
+1番よく使うイベント名は、クリックを表す`"click"`です。
+
+## コース4の「関数を値として渡す」が、ここで働く
+
+`addEventListener`の第2引数に渡しているのは、**関数**です。コース4で「関数は値であり、ほかの関数に渡せる」と学んだのを覚えているでしょうか。ここでその考え方が、そのまま実際の場面で使われます。渡した関数は、クリックされた**あとで**、ブラウザによって呼び出されます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-a"
+  height={180}
+  initialHtml={`<style>
+  .hidden { display: none; }
+</style>
+<button id="reveal-btn">開けてみる</button>
+<p id="message" class="hidden">ようこそ、縁日へ！</p>
+<script>
+  const button = document.querySelector("#reveal-btn");
+  const message = document.querySelector("#message");
+  button.addEventListener("click", () => {
+    message.classList.toggle("hidden");
+  });
+</script>`}
+/>
+
+「開けてみる」ボタンを押すたびに、`message.classList.toggle("hidden")`が実行されます。`hidden`クラスが付いていれば外れて文字が現れ、もう一度押すと`hidden`クラスが付き直って隠れます。渡したアロー関数`() => { ... }`は、ボタンが押されるまで一度も実行されません。押されて**初めて**、ブラウザがこの関数を呼び出します。
+
+<Callout type="note" title="この関数には、名前が無い">
+`addEventListener`に渡している`() => { message.classList.toggle("hidden"); }`には名前が付いていません。コース4で見た「名前のない関数」——**関数式**です。ここだけで使う小さな処理を、わざわざ名前を付けて変数に入れる必要はありません。
+</Callout>
+
+## クリックのたびに、条件を見て分ける
+
+イベントハンドラの中では、これまで通り`if`や`textContent`を組み合わせられます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-b"
+  height={160}
+  initialHtml={`<button id="light-btn">スイッチ</button>
+<p id="light-status">消灯中</p>
+<script>
+  const button = document.querySelector("#light-btn");
+  const status = document.querySelector("#light-status");
+  button.addEventListener("click", () => {
+    if (status.textContent === "消灯中") {
+      status.textContent = "点灯中";
+    } else {
+      status.textContent = "消灯中";
+    }
+  });
+</script>`}
+/>
+
+クリックされるたびに、`status`の今の文字を`===`で確かめて、逆の状態に書き換えています。1回目のクリックで「消灯中」から「点灯中」に、2回目のクリックでまた「消灯中」に戻ります。
+
+## 別々のボタンに、別々のリスナーをつける
+
+1つの要素に対して、複数のボタンからそれぞれ違う操作をすることもできます。`addEventListener`を、ボタンの数だけ呼べば済みます。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-c"
+  height={200}
+  initialHtml={`<style>
+  .open { border: 2px solid #e67e22; }
+</style>
+<p id="box">宝箱</p>
+<button id="open-btn">開ける</button>
+<button id="close-btn">閉じる</button>
+<script>
+  const box = document.querySelector("#box");
+  const openBtn = document.querySelector("#open-btn");
+  const closeBtn = document.querySelector("#close-btn");
+  openBtn.addEventListener("click", () => {
+    box.classList.add("open");
+    box.textContent = "宝箱（開いている）";
+  });
+  closeBtn.addEventListener("click", () => {
+    box.classList.remove("open");
+    box.textContent = "宝箱";
+  });
+</script>`}
+/>
+
+「開ける」を押すと`box`に`open`クラスが付いて枠線が現れ、文字も「宝箱（開いている）」に変わります。「閉じる」を押すと、どちらも元に戻ります。2つのボタンは、それぞれ別の`addEventListener`呼び出しで、別の関数と結び付いています。
+
+<Callout type="warn" title="つまずきポイント：addEventListenerは実行ではなく予約">
+`button.addEventListener("click", () => { ... })`という行そのものは、中の処理をその場では実行しません。「クリックされたら、この関数を呼んでください」とブラウザに**予約**しているだけです。実際に処理が動くのは、読み手が本当にクリックしたときです。
+</Callout>
+
+<Exercise title="演習1: 押したら文字が変わるボタン">
+
+`<button id="knock-btn">たたく</button>`をクリックしたら、`<p id="knock-result">静かだ</p>`の`textContent`を`"ドン！と音がした"`に書き換えてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-d"
+  height={160}
+  initialHtml={`<button id="knock-btn">たたく</button>
+<p id="knock-result">静かだ</p>
+<script>
+  // ここに addEventListener を書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+ボタンと結果の段落、両方を`querySelector`で取得しておきます。ボタンに対して`addEventListener("click", 関数)`を呼び、その関数の中で結果の段落の`textContent`を書き換えます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const btn = document.querySelector("#knock-btn");
+const result = document.querySelector("#knock-result");
+btn.addEventListener("click", () => {
+  result.textContent = "ドン！と音がした";
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<button id="knock-btn">たたく</button>
+<p id="knock-result">静かだ</p>
+<script>
+  const btn = document.querySelector("#knock-btn");
+  const result = document.querySelector("#knock-result");
+  btn.addEventListener("click", () => {
+    result.textContent = "ドン！と音がした";
+  });
+</script>
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: クリックでclassList.toggle">
+
+`<style>`には`.lit { background: #ffe9a8; }`が用意されています。`<button id="lantern-btn">提灯</button>`をクリックするたびに、`<p id="lantern">`に`lit`クラスをtoggleしてください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-e"
+  height={160}
+  initialHtml={`<style>
+  .lit { background: #ffe9a8; }
+</style>
+<button id="lantern-btn">提灯</button>
+<p id="lantern">灯り</p>
+<script>
+  // ここに addEventListener と classList.toggle を書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの最初の例（「開けてみる」ボタン）と同じ形です。ボタンのクリックの中で、`lantern`要素の`classList.toggle("lit")`を呼びます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const btn = document.querySelector("#lantern-btn");
+const lantern = document.querySelector("#lantern");
+btn.addEventListener("click", () => {
+  lantern.classList.toggle("lit");
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<style>
+  .lit { background: #ffe9a8; }
+</style>
+<button id="lantern-btn">提灯</button>
+<p id="lantern">灯り</p>
+<script>
+  const btn = document.querySelector("#lantern-btn");
+  const lantern = document.querySelector("#lantern");
+  btn.addEventListener("click", () => {
+    lantern.classList.toggle("lit");
+  });
+</script>
+```
+
+押すたびに、背景の色が付いたり消えたりを繰り返します。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 2つのボタンで、幕の開け閉め">
+
+`<style>`には`.hidden { display: none; }`が用意されています。`<p id="curtain">`は最初`hidden`クラス付きです。`<button id="show-btn">幕を開ける</button>`を押したら`hidden`を外し、`<button id="hide-btn">幕を閉じる</button>`を押したら`hidden`を付け直してください。
+
+<HtmlRunner
+  client:visible
+  storageKey="dom-04-f"
+  height={200}
+  initialHtml={`<style>
+  .hidden { display: none; }
+</style>
+<button id="show-btn">幕を開ける</button>
+<button id="hide-btn">幕を閉じる</button>
+<p id="curtain" class="hidden">舞台が見えた！</p>
+<script>
+  // ここに2つの addEventListener を書いてください
+</script>`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの「宝箱」の例と同じ形です。ボタンごとに`addEventListener`を1回ずつ、合計2回呼びます。それぞれの関数の中で`classList.remove`と`classList.add`を使い分けます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+const showBtn = document.querySelector("#show-btn");
+const hideBtn = document.querySelector("#hide-btn");
+const curtain = document.querySelector("#curtain");
+showBtn.addEventListener("click", () => {
+  curtain.classList.remove("hidden");
+});
+hideBtn.addEventListener("click", () => {
+  curtain.classList.add("hidden");
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```html
+<style>
+  .hidden { display: none; }
+</style>
+<button id="show-btn">幕を開ける</button>
+<button id="hide-btn">幕を閉じる</button>
+<p id="curtain" class="hidden">舞台が見えた！</p>
+<script>
+  const showBtn = document.querySelector("#show-btn");
+  const hideBtn = document.querySelector("#hide-btn");
+  const curtain = document.querySelector("#curtain");
+  showBtn.addEventListener("click", () => {
+    curtain.classList.remove("hidden");
+  });
+  hideBtn.addEventListener("click", () => {
+    curtain.classList.add("hidden");
+  });
+</script>
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `要素.addEventListener("click", 関数)`で、クリックされたときに呼ばれる関数を予約できる
+- 渡す関数は、コース4で学んだ「値としての関数」そのもの。クリックされるまで実行されない
+- ハンドラの中では、これまで通り`if`・`textContent`・`classList`を組み合わせて書ける
+- 複数のボタンには、それぞれ`addEventListener`を呼んで別々の関数を結び付ける
+
+<Quiz
+  client:visible
+  storageKey="dom-04"
+  questions={[
+    {
+      q: '`btn.addEventListener("click", () => { console.log("押された"); });`という行を実行した瞬間に起きることは？',
+      choices: [
+        '"押された"がすぐにコンソールへ出る',
+        '何も起きない。クリックされたときに、この関数が呼ばれるよう予約されるだけ',
+        'エラーになる（実行できないコードのため）',
+      ],
+      answer: 1,
+      explain: 'addEventListenerは、渡した関数をその場で実行しません。「あとでクリックされたら呼んでください」という予約です。',
+    },
+    {
+      q: 'addEventListenerの第2引数に渡すものは何？',
+      choices: ['文字列', '関数', 'CSSセレクタ'],
+      answer: 1,
+      explain: 'コース4で学んだ「値としての関数」を渡します。クリックされたときに、ブラウザがこの関数を呼び出します。',
+    },
+    {
+      q: '2つの別々のボタンに、それぞれ違う動きをさせたいときは？',
+      choices: [
+        '1つの要素に addEventListener を1回だけ呼べば、両方のボタンをまとめて扱える',
+        'ボタンごとに addEventListener を呼び、それぞれ別の関数を渡す',
+        'ボタンには addEventListener は使えない',
+      ],
+      answer: 1,
+      explain: 'ボタンごとにaddEventListenerを呼び、それぞれに渡す関数を変えることで、別々の動きをさせられます。',
+    },
+  ]}
+/>

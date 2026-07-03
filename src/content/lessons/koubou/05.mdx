@@ -1,0 +1,572 @@
+---
+title: ロジックを分けて、テストする
+course: koubou
+order: 5
+description: 検索・集計・検証をhondana.jsから切り出し、logic.jsとしてDOMから独立させます。Node標準のnode:testでassertし、node --testを実行します。数値チェックに潜むNaNの落とし穴も扱います。
+seed: テストで守られたhondanaは、もう安心して手を入れられます。最後のレッスンでは、これを人に見せられる形に整え、あなた自身のこれからの学びの地図を広げます。
+minutes: 35
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## hondana.jsが、大きくなりすぎた
+
+いまの`hondana.js`には、4つの役割が同居しています。
+
+- 画面の要素を取ってくる
+- フォームやボタンのイベントに応える
+- 本を検証する(`createBook`)
+- 本を検索する(`searchBooks`)
+
+`searchBooks`が正しく動くかを確かめたいだけなのに、テストしようとすると`document.querySelector`が失敗したり、`localStorage`が必要だったりと、**画面という別の関心事が、いつもついてきてしまいます。** 今日は、動くコードを壊さずに、この2つを引き離します。
+
+## 分ける方針
+
+- **`storage.js`** — すでに、`localStorage`の読み書きだけをする係になっています(レッスン2)
+- **`logic.js`** — 検索・集計・検証の**計算だけ**をする係。DOMにも`localStorage`にも一切触れません。今日、新しく作ります
+- **`hondana.js`** — この2つを呼び出して組み合わせる、画面の配線係として残ります
+
+`logic.js`がDOMに触れなくなれば、テストは`{ title, author, rating, review }`のようなプレーンオブジェクトの配列を直接渡すだけで済みます。画面の用意も後片付けも要りません。
+
+## node:testの、最初の一歩
+
+Node.js 22には、**追加のインストールなしで**使えるテストの仕組み、`node:test`が標準で入っています。`test`という関数と、`node:assert/strict`の`assert`を組み合わせて使います。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-05-a"
+  initialCode={`import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+test('1 + 1 は 2', () => {
+  assert.equal(1 + 1, 2);
+});
+
+test('文字列を連結できる', () => {
+  assert.equal("縁" + "日", "縁日");
+});`}
+/>
+
+`test(名前, () => { ... })`で、1つのテストを登録します。中の関数で`assert.equal(実際の値, 期待する値)`のように書き、値が一致していなければ、そこで失敗を報告します。実行すると、出力欄に**TAP**という、テスト結果の共通フォーマットで結果が表示されます。`ok 1 - 1 + 1 は 2`のような行が、1つのテストの結果です。
+
+## 数値の範囲チェックに潜む、NaNの落とし穴
+
+`logic.js`を書く前に、1つ確かめておきたいことがあります。評価が1〜5の範囲内かどうかを調べる、小さな関数を書いてみます。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-05-b"
+  expectError
+  initialCode={`import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+function isValidRating(rating) {
+  return !(rating < 1 || rating > 5);
+}
+
+test('範囲内ならtrue', () => {
+  assert.equal(isValidRating(3), true);
+});
+
+test('範囲外ならfalse', () => {
+  assert.equal(isValidRating(0), false);
+});
+
+test('数字でなければfalseになってほしい', () => {
+  assert.equal(isValidRating(Number('abc')), false);
+});`}
+/>
+
+3つ目のテストが失敗します。`Number('abc')`は`NaN`という値になりますが、`NaN < 1`も`NaN > 5`も、**どちらも`false`です。** `NaN`はどんな数と比べても`true`になりません。だから`!(false || false)`は`true`になり、`isValidRating(NaN)`は`true`を返してしまいます——コース1で出会った、「NaNはエラーにならず静かに流れていく」という性質が、ここにも表れています。
+
+比べ方を、次のように変えると直ります。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-05-c"
+  initialCode={`import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+function isValidRating(rating) {
+  return rating >= 1 && rating <= 5;
+}
+
+test('範囲内ならtrue', () => {
+  assert.equal(isValidRating(3), true);
+});
+
+test('範囲外ならfalse', () => {
+  assert.equal(isValidRating(0), false);
+});
+
+test('数字でなければfalseになってほしい', () => {
+  assert.equal(isValidRating(Number('abc')), false);
+});`}
+/>
+
+`rating >= 1 && rating <= 5`という形なら、`NaN >= 1`も`NaN <= 5`も`false`なので、`false && false`はやはり`false`になり、`NaN`は正しく「範囲外」として扱われます。**「〜より小さいか大きい」ではなく「〜以上かつ〜以下」の形で書く**——この小さな書き換えだけで、NaNの落とし穴を避けられます。`logic.js`の`createBook`は、最初からこの形で書くことにします。
+
+## logic.jsを取り出す
+
+検索・集計・検証を、`hondana.js`から`logic.js`に移します。評価の平均と著者別冊数は、これまでのhondanaにはまだなかった、新しい機能です。
+
+```js title="logic.js"
+// logic.js
+// 本の検証・検索・集計だけを行う。DOMにもlocalStorageにも触れない。
+
+export function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (!(rating >= 1 && rating <= 5)) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  return { title, author, rating, review };
+}
+
+export function searchBooks(books, keyword) {
+  return books.filter(
+    (book) => book.title.includes(keyword) || book.author.includes(keyword)
+  );
+}
+
+export function averageRating(books) {
+  if (books.length === 0) {
+    return 0;
+  }
+  let total = 0;
+  for (const book of books) {
+    total += book.rating;
+  }
+  return total / books.length;
+}
+
+export function countByAuthor(books) {
+  const counts = {};
+  for (const book of books) {
+    counts[book.author] = (counts[book.author] ?? 0) + 1;
+  }
+  return counts;
+}
+```
+
+`averageRating`と`countByAuthor`は、どちらもfor-ofで書いています。配列には`reduce`という集計向けのメソッドもあります(コース4で名前だけ触れました)が、hondanaでは読みやすさを優先して、コース2・3から使ってきたfor-ofのままにしています。`countByAuthor`の`counts[book.author] = (counts[book.author] ?? 0) + 1;`は、コース3の単語カウンタ(レッスン7)で書いたのと、まったく同じ形です。
+
+## storage.jsも、テストしやすく整理する
+
+`storage.js`の`loadBooks`は、「JSON文字列を本の配列に戻す」という部分と、「`localStorage`から読む」という部分が混ざっていました。前者だけを、`parseStoredBooks`という独立した関数に切り出します。
+
+```js title="storage.js"
+// storage.js
+// 本の一覧を、ブラウザのlocalStorageへ保存・読み込みする係。
+
+const STORAGE_KEY = "hondana-books";
+
+export function parseStoredBooks(json) {
+  if (json === null) {
+    return [];
+  }
+  const parsed = JSON.parse(json);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+export function loadBooks() {
+  return parseStoredBooks(localStorage.getItem(STORAGE_KEY));
+}
+
+export function saveBooks(books) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+}
+```
+
+`Array.isArray(parsed) ? parsed : []`という行も、新しく足しました。もし開発者ツールなどから`localStorage`の中身を直接書き換えられて、配列ではない値(たとえば`{"broken":true}`)が保存されていたら、そのままでは`books.length`や`for...of`が期待どおりに動きません。**配列であることまで確かめてから返す**、という一段階の守りです。`parseStoredBooks`は`localStorage`に一切触れないので、`loadBooks`から切り離して単体でテストできます。
+
+## hondana.jsは、importを差し替えるだけ
+
+`createBook`と`searchBooks`の中身は`hondana.js`から消え、かわりに`logic.js`からimportします。それ以外の画面の配線は変わりません。加えて、評価の平均と著者別冊数を表示する`renderStats`を1つ追加します。
+
+```js nocheck
+// これまで: hondana.jsの中に検証・検索まで書いていた
+function createBook(title, author, rating, review) { /* ... */ }
+function searchBooks(books, keyword) { /* ... */ }
+
+// これから: logic.jsとstorage.jsに任せる
+import { loadBooks, saveBooks } from './storage.js';
+import { createBook, searchBooks, averageRating, countByAuthor } from './logic.js';
+```
+
+```js title="hondana.js" nocheck
+import { loadBooks, saveBooks } from './storage.js';
+import { createBook, searchBooks, averageRating, countByAuthor } from './logic.js';
+
+let books = loadBooks();
+
+const listEl = document.querySelector('#book-list');
+const formEl = document.querySelector('#add-form');
+const titleInput = document.querySelector('#title-input');
+const authorInput = document.querySelector('#author-input');
+const ratingInput = document.querySelector('#rating-input');
+const reviewInput = document.querySelector('#review-input');
+const errorEl = document.querySelector('#error');
+const searchInput = document.querySelector('#search-input');
+const statsEl = document.querySelector('#stats');
+
+function render(list) {
+  listEl.textContent = "";
+
+  if (list.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = "まだ本が登録されていません。";
+    listEl.appendChild(empty);
+  } else {
+    for (const book of list) {
+      const li = document.createElement('li');
+
+      const heading = document.createElement('strong');
+      heading.textContent = `${book.title} / ${book.author} (評価${book.rating})`;
+
+      const review = document.createElement('p');
+      review.textContent = book.review;
+
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = "削除";
+      deleteButton.addEventListener('click', () => {
+        books = books.filter((b) => b !== book);
+        saveBooks(books);
+        render(books);
+      });
+
+      li.appendChild(heading);
+      li.appendChild(review);
+      li.appendChild(deleteButton);
+      listEl.appendChild(li);
+    }
+  }
+
+  renderStats();
+}
+
+function renderStats() {
+  if (books.length === 0) {
+    statsEl.textContent = "";
+    return;
+  }
+
+  const average = averageRating(books);
+  const counts = countByAuthor(books);
+  const authorNames = Object.keys(counts);
+
+  const lines = [];
+  for (const author of authorNames) {
+    lines.push(`${author}: ${counts[author]}冊`);
+  }
+
+  statsEl.textContent = `${books.length}冊 / 平均評価 ${average.toFixed(2)} / ${lines.join("、")}`;
+}
+
+formEl.addEventListener('submit', (event) => {
+  event.preventDefault();
+  errorEl.textContent = "";
+
+  try {
+    const book = createBook(
+      titleInput.value,
+      authorInput.value,
+      Number(ratingInput.value),
+      reviewInput.value
+    );
+    books = [...books, book];
+    saveBooks(books);
+    render(books);
+
+    titleInput.value = "";
+    authorInput.value = "";
+    ratingInput.value = "";
+    reviewInput.value = "";
+  } catch (error) {
+    errorEl.textContent = error.message;
+  }
+});
+
+searchInput.addEventListener('input', () => {
+  const keyword = searchInput.value;
+  render(keyword === "" ? books : searchBooks(books, keyword));
+});
+
+render(books);
+```
+
+`index.html`には、集計を表示する`<p id="stats">`を1つ足すだけです。
+
+```html
+<input id="search-input" type="search" placeholder="検索">
+<p id="stats"></p>
+
+<ul id="book-list"></ul>
+```
+
+`renderStats`の`Object.keys(counts)`は、`countByAuthor`が返したオブジェクトから、著者名だけを配列として取り出すメソッドです。取り出した配列を、これまでどおりfor-ofで歩きます。`.toFixed(2)`は、数値を小数点以下2桁までの文字列にするメソッドで、`4`なら`"4.00"`になります。
+
+<Callout type="note" title="このファイルの検証について">
+`hondana.js`は`storage.js`・`logic.js`と組み合わさってはじめて成立するので、CodeRunnerでは単体実行できません。`logic.js`と`storage.js`は、それぞれ単体でNode.js 22の構文チェックを通しています(このあとのテストで、動きそのものも確認します)。
+</Callout>
+
+## logic.jsとstorage.jsを、node:testで固める
+
+`tests`というフォルダを作り、その中に`logic.test.mjs`というテストファイルを置きます。
+
+```js title="tests/logic.test.mjs" nocheck
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createBook, searchBooks, averageRating, countByAuthor } from '../logic.js';
+import { parseStoredBooks } from '../storage.js';
+
+const shelf = [
+  createBook('三体', '劉慈欣', 5, 'スケールがすごい'),
+  createBook('三体0', '劉慈欣', 4, '続編も良い'),
+  createBook('コンビニ人間', '村田沙耶香', 3, '静かな衝撃'),
+];
+
+test('タイトルに一致する本を探せる', () => {
+  const found = searchBooks(shelf, '三体');
+  assert.equal(found.length, 2);
+});
+
+test('著者に一致する本を探せる', () => {
+  const found = searchBooks(shelf, '村田沙耶香');
+  assert.equal(found.length, 1);
+  assert.equal(found[0].title, 'コンビニ人間');
+});
+
+test('一致しない語は空の一覧になる', () => {
+  const found = searchBooks(shelf, '存在しない語');
+  assert.equal(found.length, 0);
+});
+
+test('平均評価を計算できる', () => {
+  assert.equal(averageRating(shelf), 4);
+});
+
+test('本が空なら平均評価は0', () => {
+  assert.equal(averageRating([]), 0);
+});
+
+test('著者ごとの冊数を数えられる', () => {
+  const counts = countByAuthor(shelf);
+  assert.equal(counts['劉慈欣'], 2);
+  assert.equal(counts['村田沙耶香'], 1);
+});
+
+test('タイトルが空だと作れない', () => {
+  assert.throws(() => createBook('', '劉慈欣', 5, '感想'), /タイトルは必須です/);
+});
+
+test('評価が範囲外だと作れない', () => {
+  assert.throws(() => createBook('三体', '劉慈欣', 0, '感想'));
+  assert.throws(() => createBook('三体', '劉慈欣', 6, '感想'));
+});
+
+test('保存されていなければ空の一覧になる', () => {
+  assert.deepEqual(parseStoredBooks(null), []);
+});
+
+test('保存されているJSONを本の一覧に戻せる', () => {
+  const json = JSON.stringify([{ title: '三体', author: '劉慈欣', rating: 5, review: '' }]);
+  const books = parseStoredBooks(json);
+  assert.equal(books.length, 1);
+  assert.equal(books[0].title, '三体');
+});
+
+test('配列ではないデータが保存されていたら、空の一覧として扱う', () => {
+  const json = JSON.stringify({ broken: true });
+  assert.deepEqual(parseStoredBooks(json), []);
+});
+```
+
+`hondana`フォルダの直下で、`node --test`を実行します。
+
+```console
+$ node --test
+✔ タイトルに一致する本を探せる (1.8ms)
+✔ 著者に一致する本を探せる (0.2ms)
+✔ 一致しない語は空の一覧になる (0.2ms)
+✔ 平均評価を計算できる (0.2ms)
+✔ 本が空なら平均評価は0 (0.1ms)
+✔ 著者ごとの冊数を数えられる (0.2ms)
+✔ タイトルが空だと作れない (1.0ms)
+✔ 評価が範囲外だと作れない (0.2ms)
+✔ 保存されていなければ空の一覧になる (3.5ms)
+✔ 保存されているJSONを本の一覧に戻せる (1.9ms)
+✔ 配列ではないデータが保存されていたら、空の一覧として扱う (1.2ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+```
+
+11個のテストが、1つも失敗せずに通りました。`node --test`は、`test`ディレクトリの中や、ファイル名が`.test.mjs`のように終わるファイルを、自動的に探して実行してくれます。`npm install`のような準備は、何もしていません。
+
+<Callout type="warn" title="つまずきポイント: テストファイルの名前と場所">
+`node --test`が自動的に拾ってくれるのは、次のどちらかです。
+
+- ディレクトリ名がちょうど`test`(単数形)のフォルダの中にある、すべての`.js`・`.mjs`・`.cjs`ファイル
+- それ以外の場所でも、ファイル名が`.test.js`・`.test.mjs`のように**特定の形で終わる**ファイル
+
+hondanaの`tests`フォルダは複数形の名前なので、1つ目のルールには当てはまりません。だから`tests/logic.test.mjs`は、フォルダの中にあることではなく、**ファイル名が`.test.mjs`で終わっていること**によって拾われています。試しに、同じ`tests`フォルダの中に`tests/logic.notes.mjs`のような名前でテストを書いても、`node --test`はそれを見つけてくれません——実行された形跡すら残らない、気づきにくい失敗の仕方です。テストファイルの名前は、必ず`.test.mjs`(または`.test.js`)で終わらせてください。
+</Callout>
+
+<Exercise title="演習1: 空の一覧の集計をテストする">
+
+`tests/logic.test.mjs`に、`countByAuthor([])`(空の一覧)を渡すと、結果も空のオブジェクトになることを確かめるテストを追加してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+オブジェクトが空かどうかは、`Object.keys(obj).length === 0`で調べられます。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+test('空の一覧の著者別冊数は空になる', () => {
+  const result = countByAuthor([]);
+  assert.equal(Object.keys(result).length, 0);
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+上のヒント2がそのまま答えです。境界にあたる「本が1冊もない」場合を確かめておくと、`hondana.js`の「まだ本が登録されていません。」の分岐と合わせて、hondana全体の動きに自信が持てます。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 空白だけのタイトルを拒否するテストを書いて、直す">
+
+`createBook('   ', '劉慈欣', 5, '感想')`のように、**空白だけのタイトル**を渡すと`Error`が投げられることを確かめるテストを、`tests/logic.test.mjs`に追加してください。まずテストを実行して、失敗することを確認してから、`logic.js`の`createBook`を直してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+いまの`createBook`は`if (!title)`しか見ていないので、`"   "`(空白だけの文字列)は`真`と判定され、素通りしてしまいます。`.trim()`で前後の空白を取り除いてから判定すれば直せます。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+test('空白だけのタイトルは拒否される', () => {
+  assert.throws(() => createBook('   ', '劉慈欣', 5, '感想'));
+});
+```
+
+`createBook`の直し方は、こうです。
+
+```js nocheck
+export function createBook(title, author, rating, review) {
+  const cleanTitle = (title ?? "").trim();
+  const cleanAuthor = (author ?? "").trim();
+  if (!cleanTitle) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!cleanAuthor) {
+    throw new Error("著者は必須です");
+  }
+  if (!(rating >= 1 && rating <= 5)) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  return { title: cleanTitle, author: cleanAuthor, rating, review };
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+テストを先に書いて実行すると、`assert.throws`が「例外が投げられなかった」という理由で失敗するはずです。ヒント2の`createBook`に直すと、`title.trim()`が空文字になるため、正しく`Error`が投げられるようになり、テストも通ります。テストを書いてから直す、という順番そのものが、このレッスンで学んだことの実践です。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 検索語が空文字のときの動きを、テストで確かめる">
+
+`hondana.js`の検索は`keyword === "" ? books : searchBooks(books, keyword)`のように、空文字のときだけ特別扱いしています。でも本当に特別扱いが必要か、`searchBooks(shelf, '')`(空文字で検索)を直接呼ぶテストを書いて確かめてください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`"三体".includes("")`が何を返すか、CodeRunnerで小さく試してから予想を立ててみてください。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+test('空文字での検索は全件返す', () => {
+  const found = searchBooks(shelf, '');
+  assert.equal(found.length, shelf.length);
+});
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+このテストは通ります。`"何か".includes("")`は常に`true`を返すため、`searchBooks`は空文字を渡されても、絞り込まずに全件を返します。つまり`hondana.js`の`keyword === "" ? books : ...`という分岐は、なくても同じ結果になる、念のための書き方だったと分かります。動きを変える必要はありませんが、「なぜその分岐があるのか」を自分のテストで確かめられたことに意味があります。
+</details>
+
+</Exercise>
+## このレッスンで分かったこと
+
+- `node:test`と`node:assert/strict`は、Node.js 22に標準で入っている。追加のインストールは要らない
+- `rating < 1 || rating > 5`のような比較は、`NaN`に対して両方`false`になり、範囲外を見逃す。`rating >= 1 && rating <= 5`の形の方が安全
+- 検索・集計・検証(`logic.js`)をDOMや`localStorage`から切り離すと、プレーンオブジェクトの配列を渡すだけでテストできる
+- `node --test`は、`test`という名前のフォルダの中身、または`.test.mjs`のような名前のファイルを自動的に探して実行する
+
+<Quiz
+  client:visible
+  storageKey="koubou-05"
+  questions={[
+    {
+      q: 'rating < 1 || rating > 5 という条件が、rating が NaN のときに正しく機能しない理由は?',
+      choices: [
+        'NaNはJavaScriptでは0として扱われるから',
+        'NaNとの比較(<や>)はすべてfalseになるため、条件全体がfalseになり「範囲内」と誤判定されるから',
+        'NaNを比較に使うと必ず例外が発生するから',
+      ],
+      answer: 1,
+      explain: 'NaNはどんな数との比較(<, >, <=, >=)もfalseになります。rating >= 1 && rating <= 5の形なら、NaNのときに正しくfalseになります。',
+    },
+    {
+      q: 'logic.jsをDOMやlocalStorageから切り離した、いちばん大きな利点は?',
+      choices: [
+        'logic.jsの実行速度が自動的に速くなる',
+        'プレーンオブジェクトの配列を渡すだけでテストでき、画面やブラウザの用意が要らなくなる',
+        'logic.jsがhondana.jsより優先して読み込まれるようになる',
+      ],
+      answer: 1,
+      explain: 'DOMやlocalStorageに触れないことで、テストは値を渡すだけで完結し、後片付けも要りません。',
+    },
+    {
+      q: 'tests/logic.notes.mjs のような名前のファイルを tests フォルダに置いても node --test が拾わないのはなぜ?',
+      choices: [
+        'testsフォルダの中には1つのファイルしか置けないから',
+        'testsは複数形なのでディレクトリ名によるルールの対象にならず、ファイル名も.test.mjsのような形で終わっていないから',
+        '拡張子が.mjsのファイルはnode --testでは扱えないから',
+      ],
+      answer: 1,
+      explain: 'node --testが自動で拾うのは、名前がちょうど"test"のディレクトリの中身か、.test.mjsのような名前のパターンに一致するファイルです。',
+    },
+  ]}
+/>
+

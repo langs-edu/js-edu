@@ -1,0 +1,412 @@
+---
+title: 設計とセットアップ
+course: koubou
+order: 1
+description: 読書メモWebアプリ「hondana」を、6レッスンかけて作りはじめます。要件を言葉にし、Bookの表し方を決め、モジュール(script type="module"、import/export)でファイルを分ける最初の一歩です。
+seed: hondanaは今、ページを閉じると記憶を全部失います。次のレッスンでは、この記録をブラウザの中に——JSONの力を借りて——残るものにします。
+minutes: 30
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+import CodeRunner from '../../../components/islands/CodeRunner';
+
+## これから、6回かけて1つの道具を作ります
+
+ここまでの5つのコースで、あなたはJavaScriptの文法をひととおり手に入れ、DOMを使ってページを書き換える方法も学びました。最後のコースでは、それを全部使って、実際にブラウザで動くアプリを1つ作ります。
+
+作るのは「hondana(本棚)」という名前の、読書メモを記録するWebアプリです。本のタイトル・著者・評価・感想を記録して、あとから一覧・検索・集計ができる。6つのレッスンをかけて、少しずつ育てていきます。姉妹サイトの喫茶Java・Pythonの湯にも、同じ名前・同じ役目の道具があります。あちらはコマンドラインで動く道具でしたが、JavaScript縁日で作るhondanaは、ブラウザの中で動くWeb版です。
+
+## 要件を、言葉にする
+
+コードを書く前に、何を作るかを言葉にしておきます。
+
+- 1冊の記録は、**タイトル・著者・評価(1〜5)・感想**の4つを持つ
+- 記録はブラウザに残す(ページを閉じても消えない)
+- 画面から**追加・一覧・検索**ができる
+- あとから、評価の平均や著者ごとの冊数も見られるようにする
+
+この4行が、6レッスン分の設計図です。今日のゴールは、1冊分のデータの形を決めて、ファイルの構成を用意することです。
+
+## 1冊分のデータを、どう表すか
+
+コース4で、classを学びました。1冊分のデータをclassで表すなら、こう書けます。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-01-a"
+  initialCode={`class Book {
+  constructor(title, author, rating, review) {
+    this.title = title;
+    this.author = author;
+    this.rating = rating;
+    this.review = review;
+  }
+
+  summary() {
+    return \`\${this.title} / \${this.author} (評価\${this.rating})\`;
+  }
+}
+
+const book = new Book("三体", "劉慈欣", 5, "スケールがすごい");
+console.log(book.summary());`}
+/>
+
+動きます。でも、hondanaはこれから、本の記録をJSONという文字の形にしてブラウザに保存します。コース4で学んだ`JSON.stringify`と`JSON.parse`の組み合わせを、classで作った値に対して試すと、何が起きるでしょうか。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-01-b"
+  expectError
+  initialCode={`class Book {
+  constructor(title, author) {
+    this.title = title;
+    this.author = author;
+  }
+
+  describe() {
+    return \`\${this.title}(\${this.author})\`;
+  }
+}
+
+const original = new Book("三体", "劉慈欣");
+console.log(original.describe());
+
+const revived = JSON.parse(JSON.stringify(original));
+console.log(revived);
+console.log(revived.describe());`}
+/>
+
+実行すると、`三体(劉慈欣)`のあと、`{ title: '三体', author: '劉慈欣' }`が表示され、最後の行で止まります。
+
+```console
+三体(劉慈欣)
+{ title: '三体', author: '劉慈欣' }
+TypeError: revived.describe is not a function
+```
+
+`JSON.stringify`は、値の**中身(プロパティ)**だけを文字にします。classが持っていた`describe`というメソッドは、JSONの文字には含まれません。だから`JSON.parse`で戻した`revived`は、`title`と`author`だけを持つ、ただのオブジェクトになり、`describe`を呼ぶとエラーになります。
+
+hondanaの本の記録は、この先ずっとJSONとして保存したり読み込んだりします。だから、**メソッドを持たない、値だけのプレーンオブジェクト**で表すことにします。かわりに、正しい値からしか本を作れないようにする**関数**を用意します。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-01-c"
+  initialCode={`function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (rating < 1 || rating > 5) {
+    throw new Error(\`評価は1から5で入力してください: \${rating}\`);
+  }
+  return { title, author, rating, review };
+}
+
+const book = createBook("三体", "劉慈欣", 5, "スケールがすごい");
+console.log(book);`}
+/>
+
+`createBook`は、`{ title, author, rating, review }`という**プレーンオブジェクト**を返します。これは`{ title: title, author: author, rating: rating, review: review }`の省略形で、キーと値の変数名が同じときに使える書き方です。不正な値なら`throw new Error(...)`で作らせません——コース4の例外のレッスンで学んだ、「そもそも作れない」という防御の形です。classのインスタンスではないので、あとでJSONにしても何も失われません。
+
+## モジュールという仕組み——ファイルを分けて、貸し借りする
+
+ここまでのコースでは、コードはいつも1つのCodeRunnerや1つのファイルの中で完結していました。hondanaはこれから、役割ごとに複数のファイルに分けて書きます。ファイルをまたいで関数や値を貸し借りする仕組みが、**モジュール**です。
+
+値や関数を、他のファイルから使えるようにするには`export`を付けます。
+
+<CodeRunner
+  client:visible
+  storageKey="koubou-01-d"
+  initialCode={`export function shout(text) {
+  return text + "!";
+}
+
+console.log(shout("いらっしゃい"));`}
+/>
+
+これは今まで見てきた関数の書き方と同じで、`export`が1つ付いただけです。`export`があること自体は何も特別なことを起こしません——「このファイルの外からも、この関数を使えるようにする」という印がつくだけです。
+
+別のファイルから使うときは、`import`で名前を指定して受け取ります。
+
+```js title="shout.js" nocheck
+export function shout(text) {
+  return text + "!";
+}
+```
+
+```js title="main.js" nocheck
+import { shout } from './shout.js';
+
+console.log(shout("いらっしゃい"));
+```
+
+`{ shout }`という書き方は、`shout.js`がexportした名前のうち、`shout`という名前のものを受け取る、という意味です。この2つのファイルは、CodeRunnerでは1つずつしか動かせないので、実際に動くところは、このあと本物のhondanaのファイルで確認します。
+
+## script type="module" が要る理由
+
+モジュールを使うファイルをブラウザで読み込むには、`<script>`タグに`type="module"`を付ける必要があります。
+
+```html
+<script type="module" src="hondana.js"></script>
+```
+
+これを忘れて、ただの`<script src="hondana.js"></script>`にすると、ブラウザは`hondana.js`を、モジュールではないふつうのスクリプトとして読もうとします。ふつうのスクリプトの中では、`import`や`export`は使えません。
+
+<Callout type="warn" title="つまずきポイント: モジュールとして読まれないと">
+Node.jsにも、同じ区別があります。`import`を使うファイルを、モジュールではない扱いで実行させると、こう返ってきます。
+
+```console
+$ node bar.cjs
+bar.cjs:1
+import { shout } from './foo.js';
+^^^^^^
+
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1486:18)
+    at Module._compile (node:internal/modules/cjs/loader:1528:20)
+```
+
+「モジュールの外では import 文を使えません」——`type="module"`を書き忘れたときに、ブラウザのコンソールに出るエラーも、同じ理由で起きています。`import`や`export`を使うファイルは、必ず「これはモジュールだ」という印——ブラウザなら`type="module"`——とセットで読み込む約束です。
+</Callout>
+
+## ファイルの構成
+
+hondanaを、役割ごとに3つのファイルに分けます。
+
+- `index.html` — 画面の骨組み
+- `hondana.js` — 画面を作り、イベントに応える係(`type="module"`)
+- `storage.js` — 記録を保存する係
+
+今日のところ、`storage.js`はまだ「ページを閉じると忘れてしまう」仮の保存です。次のレッスンで、本物のブラウザの保存(localStorage)に置き換えます。
+
+```js title="storage.js"
+// storage.js
+// 「保存」を担当する係。今はまだ、ページを閉じると消えてしまう
+// その場限りの保存です。次のレッスンで、本物のlocalStorageに置き換えます。
+
+let books = [];
+
+export function loadBooks() {
+  return books;
+}
+
+export function saveBooks(newBooks) {
+  books = newBooks;
+}
+```
+
+`hondana.js`は、`storage.js`から`loadBooks`と`saveBooks`をimportし、`createBook`で2冊分の記録を作って保存し、画面に冊数を表示します。
+
+```js title="hondana.js" nocheck
+import { loadBooks, saveBooks } from './storage.js';
+
+function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (rating < 1 || rating > 5) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  return { title, author, rating, review };
+}
+
+const shelf = [
+  createBook("三体", "劉慈欣", 5, "スケールがすごい"),
+  createBook("お探し物は図書室まで", "青山美智子", 4, "静かに沁みる"),
+];
+saveBooks(shelf);
+
+const books = loadBooks();
+const countEl = document.querySelector('#count');
+countEl.textContent = `${books.length}冊、登録されています。`;
+console.log(books);
+```
+
+`index.html`はこうです。
+
+```html title="index.html"
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>hondana</title>
+</head>
+<body>
+  <h1>hondana</h1>
+  <p id="count"></p>
+
+  <script type="module" src="hondana.js"></script>
+</body>
+</html>
+```
+
+<Callout type="note" title="このファイルたちの検証について">
+`hondana.js`は`storage.js`と組み合わさってはじめて成立するファイルで、単体では実行できません(自己完結が条件のCodeRunnerでは動かせません)。この3つは、実際に`hondana`というフォルダの中に置いて、Node.js 22で構文を確認したものです。
+</Callout>
+
+## 手元で動かしてみる
+
+3つのファイルを同じフォルダに置いたら、ブラウザで開いてみます。ただし、`index.html`を**ダブルクリックするだけでは動きません**。
+
+<Callout type="note" title="誠実な保留: なぜダブルクリックでは動かないのか">
+`type="module"`を使うスクリプトは、ブラウザによってセキュリティ上の理由から、`file://`(ローカルのファイルを直接開いたとき)からの読み込みがブロックされます。かわりに、簡単な「ローカルサーバー」を立てて、`http://`から開く必要があります。たとえば`npx serve .`のようなコマンドです。この先のレッスンで手を動かしながら育てていき、最後のレッスンで動かし方をまとめます。
+</Callout>
+
+<Exercise title="演習1: あなたの本を1冊、shelfに追加する">
+
+`hondana.js`の`shelf`に、あなたが実際に読んだ本を1冊追加してください。ローカルサーバーで`index.html`を開き、画面に「3冊、登録されています。」と表示されることを確認してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`shelf`は`createBook(...)`を要素に持つ配列です。カンマ区切りでもう1つ増やします。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+const shelf = [
+  createBook("三体", "劉慈欣", 5, "スケールがすごい"),
+  createBook("お探し物は図書室まで", "青山美智子", 4, "静かに沁みる"),
+  createBook("ここにあなたの本", "著者名", 5, "感想"),
+];
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+上のヒント2がそのまま答えです。`rating`を1〜5の範囲外にすると`Error`が投げられ、画面が真っ白になったり、開発者ツールのコンソールにエラーが出たりすることも、ついでに確かめてみてください。
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 感想の長さを検証する">
+
+`createBook`に、**感想(`review`)が140文字を超えていたら`Error`を投げる**バリデーションを追加してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`rating`をチェックしているif文のあとに、`review`の文字数を見るif文を1つ増やします。文字列の長さは`.length`で分かります。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+
+```js nocheck
+if (review.length > 140) {
+  throw new Error("感想は140文字以内にしてください");
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js nocheck
+function createBook(title, author, rating, review) {
+  if (!title) {
+    throw new Error("タイトルは必須です");
+  }
+  if (!author) {
+    throw new Error("著者は必須です");
+  }
+  if (rating < 1 || rating > 5) {
+    throw new Error(`評価は1から5で入力してください: ${rating}`);
+  }
+  if (review.length > 140) {
+    throw new Error("感想は140文字以内にしてください");
+  }
+  return { title, author, rating, review };
+}
+```
+
+このように、検証したいルールが増えるたびに、if文を1つ足すだけで済むのが、この関数の形の良さです。
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: exportした名前を書き間違える">
+
+`storage.js`の`export function loadBooks`を`export function fetchBooks`に書き換えてください(`hondana.js`側の`import { loadBooks, ... }`はそのままにします)。ローカルサーバーで開き直すと何が起きるか、開発者ツールのコンソールを見て確認したら、`loadBooks`に戻してください。
+
+<details>
+<summary>ヒント1(考え方)</summary>
+`hondana.js`は、まだ`storage.js`に`loadBooks`という名前のexportがあるつもりで`import`しています。でも`storage.js`の方は名前を変えてしまいました。
+</details>
+
+<details>
+<summary>ヒント2(かたち)</summary>
+書き換えたら、ブラウザの開発者ツールのコンソール(F12)を開いてから、ページを再読み込みします。
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+Node.jsで同じ状況(exportした名前と違う名前でimportする)を再現すると、こう返ってきます。
+
+```console
+$ node main.js
+file:///.../main.js:1
+import { loadBooks } from './storage.js';
+         ^^^^^^^^^
+SyntaxError: The requested module './storage.js' does not provide an export named 'loadBooks'
+```
+
+「`./storage.js`は`loadBooks`という名前のexportを持っていません」——ブラウザの開発者ツールのコンソールにも、これと同じ趣旨のエラーが表示されます。exportした名前とimportする名前は、一字一句そろっていなければならない約束です。確認できたら、`fetchBooks`を`loadBooks`に戻してください。
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- hondanaは、タイトル・著者・評価・感想を記録し、追加・一覧・検索・集計ができる読書メモWebアプリ
+- classにすると、JSONに変換したときにメソッドが失われる。だからhondanaの本は、**プレーンオブジェクト+検証する関数**で表す
+- `export`は値や関数を他のファイルから使えるようにする印、`import`は別のファイルからその名前を受け取る仕組み
+- `<script type="module">`のないファイルでは、`import`や`export`は構文エラーになる
+- `type="module"`のファイルは`file://`では動かない。ローカルサーバーが必要
+
+<Quiz
+  client:visible
+  storageKey="koubou-01"
+  questions={[
+    {
+      q: 'hondanaの本の記録を、classではなくプレーンオブジェクト+関数で表すことにした、いちばんの理由は?',
+      choices: [
+        'プレーンオブジェクトの方がタイプ数が少なくて書くのが楽だから',
+        'classのインスタンスをJSONに変換すると、メソッドが失われてしまうから',
+        'JavaScriptにはclassという機能が存在しないから',
+      ],
+      answer: 1,
+      explain: 'JSON.stringifyは値の中身だけを文字にするため、classが持つメソッドはJSON化すると失われます。hondanaは記録をJSONとして保存するので、プレーンオブジェクトを選びました。',
+    },
+    {
+      q: 'あるファイルで export function loadBooks() {...} と書いたとき、別のファイルからこれを使うには?',
+      choices: [
+        '何もしなくても自動的に使えるようになる',
+        'import { loadBooks } from \'そのファイルのパス\'; と書いて受け取る',
+        'require(\'loadBooks\') と書いて読み込む',
+      ],
+      answer: 1,
+      explain: 'exportされた名前は、importで名前を指定して受け取る必要があります。',
+    },
+    {
+      q: 'scriptタグに type="module" を付け忘れて hondana.js を読み込むと?',
+      choices: [
+        '特に問題なく動く。type="module"は見た目を整えるだけの飾りだから',
+        'hondana.jsの中のimportやexportが構文エラーになる',
+        'hondana.jsが自動的にモジュールとして扱われる',
+      ],
+      answer: 1,
+      explain: 'type="module"のないスクリプトはふつうのスクリプトとして読まれ、その中でimport/exportを使うと構文エラーになります。',
+    },
+  ]}
+/>

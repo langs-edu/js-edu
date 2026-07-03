@@ -1,0 +1,345 @@
+---
+title: 名前の見える範囲（スコープ）
+course: nagare
+order: 6
+description: "if・for・関数など{}の中で作った名前が、外からどこまで見えるかを学びます。ブロックスコープと関数スコープ、そして名前がかぶったときに起きるシャドーイングという現象に出会います。"
+seed: 流れの基本がそろいました。最後に、ここまでの道具を全部使って、小さなゲームを作ってみましょう。
+minutes: 20
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 名前は、どこまで見える？
+
+前回、関数の中で`const buki = "スーパーボール";`のような変数を作りました。この`buki`という名前は、関数の外からも使えるのでしょうか。`if`や`for`の`{ }`の中で作った変数はどうでしょう。名前が「どこからどこまで見えるか」という範囲のことを**スコープ**と呼びます。
+
+## ブロックスコープ——{}の中で作った名前は、外から見えない
+
+`let`・`const`で作った変数は、それを囲む`{ }`の中でだけ存在します。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-a"
+  expectError
+  initialCode={`if (true) {
+  const himitsu = "屋台の裏メニュー";
+  console.log(himitsu);
+}
+
+console.log(himitsu);`}
+/>
+
+```console
+屋台の裏メニュー
+ReferenceError: himitsu is not defined
+```
+
+`if`の`{ }`の中で宣言した`himitsu`は、その`{ }`を出た瞬間に存在しなくなります。`{ }`の外で`console.log(himitsu)`と書くと、`himitsu`という名前そのものが見つからず`ReferenceError`になります。この「`{ }`が名前の見える範囲を区切る」性質を**ブロックスコープ**と呼びます。
+
+<Callout type="note" title="宣言と代入は別物">
+ブロックスコープが区切るのは、あくまで**新しく`let`・`const`で宣言した名前**です。すでに外で宣言されている変数に、`{ }`の中から値を代入するだけなら話は別です。
+</Callout>
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-b"
+  initialCode={`let kyakusuu = 0;
+
+if (true) {
+  kyakusuu = kyakusuu + 10;
+}
+
+console.log(kyakusuu);`}
+/>
+
+```console
+10
+```
+
+ここでは`if`の`{ }`の中に`let`も`const`もありません。外で宣言済みの`kyakusuu`に、`{ }`の中から代入し直しているだけです。だから`{ }`を出たあとも、変更はちゃんと反映されています。
+
+## 関数スコープ——関数の中で作った名前は、外から見えない
+
+関数の`{ }`も、同じルールです。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-c"
+  expectError
+  initialCode={`function junbi() {
+  const buki = "スーパーボール";
+  console.log(buki);
+}
+
+junbi();
+console.log(buki);`}
+/>
+
+```console
+スーパーボール
+ReferenceError: buki is not defined
+```
+
+`junbi`関数の中で作った`buki`は、関数の外からは見えません。関数を呼び出した後でも、その中だけで生まれて消える名前です。
+
+## 外の変数を、関数の中から変更する
+
+先ほどの`if`と同じように、関数もすでにある外側の変数を読んだり書き換えたりできます。関数の中で改めて`let`・`const`で宣言していなければ、それは新しい変数ではなく「外の変数そのもの」です。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-d"
+  initialCode={`let kyakusuu = 0;
+
+function kyakuGaKuru() {
+  kyakusuu = kyakusuu + 1;
+}
+
+kyakuGaKuru();
+kyakuGaKuru();
+console.log(kyakusuu);`}
+/>
+
+```console
+2
+```
+
+`kyakuGaKuru`を呼び出すたびに、外の`kyakusuu`が1ずつ増えています。関数の中に`let kyakusuu`という宣言がないので、これは新しい変数ではなく、外の`kyakusuu`への代入です。
+
+## シャドーイング——同じ名前で、内側が外側を覆い隠す
+
+もし関数の中で、外と同じ名前を`let`・`const`で改めて宣言したらどうなるでしょうか。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-e"
+  initialCode={`let namae = "コウタ";
+
+function yobu() {
+  let namae = "あかり";
+  console.log(namae);
+}
+
+yobu();
+console.log(namae);`}
+/>
+
+```console
+あかり
+コウタ
+```
+
+関数の中の`let namae = "あかり";`は、外の`namae`とは別の、新しい変数です。関数の中では、この内側の`namae`が優先され、外の`namae`は一時的に「覆い隠され」ます。これを**シャドーイング**と呼びます。関数を抜けると内側の`namae`は消えるので、外の`namae`は`"コウタ"`のまま変わっていません。
+
+<Callout type="warn" title="つまずきポイント：うっかりシャドーイングして、更新のつもりが更新できていない">
+「外の変数を増やしたい」と思って関数の中に書いたつもりが、うっかり`let`や`const`をつけてしまうと、それは更新ではなく**別の変数の新規作成**になります。エラーにはならず、ただ外の変数が変わらないまま——静かに意図と違う動きをするので、見つけにくいバグです。外の変数を更新したいときは、`let`・`const`をつけずに`名前 = 値;`とだけ書いてください。
+</Callout>
+
+<Exercise title="演習1: forの中で作った変数を、外で使おうとする">
+
+次のコードを実行して、何が起きるか確認してください。`for`の`{ }`の中で`const`宣言した`nifuda`を、`{ }`の外から使おうとしています。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-ex1"
+  expectError
+  initialCode={`for (let i = 0; i < 3; i++) {
+  const nifuda = \`\${i}番の荷札\`;
+}
+
+console.log(nifuda);`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`for`の`{ }`もブロックスコープです。中で宣言した変数は、`{ }`を出た瞬間に見えなくなります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+このコードは直しません。何が起きるかを確認するだけの演習です。エラーの種類に注目してください。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```console
+ReferenceError: nifuda is not defined
+```
+
+`nifuda`は`for`の`{ }`の中だけで存在する変数です。`{ }`の外に出た時点で消えているので、`console.log(nifuda)`は「そんな名前は存在しない」という`ReferenceError`になります。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: シャドーイングのバグを直す">
+
+次の関数は、外の`goukei`に`atai`を足していくつもりですが、`goukei`がいつまでも`0`のままです。原因を直してください。
+
+```js title="Before.js"
+let goukei = 0;
+
+function tasu(atai) {
+  let goukei = atai;
+}
+
+tasu(5);
+console.log(goukei);
+```
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-ex2"
+  initialCode={`// letを消して直してみましょう
+let goukei = 0;
+
+function tasu(atai) {
+  let goukei = atai;
+}
+
+tasu(5);
+console.log(goukei);`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+関数の中の`let goukei = atai;`は、外の`goukei`とは別の新しい変数を作っています。外の`goukei`を更新したいなら、`let`をつけてはいけません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function tasu(atai) {
+  goukei = goukei + atai;
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+let goukei = 0;
+
+function tasu(atai) {
+  goukei = goukei + atai;
+}
+
+tasu(5);
+console.log(goukei);
+```
+
+```console
+5
+```
+
+`let`を外すことで、関数の中の`goukei`は新しい変数ではなく、外の`goukei`そのものを指すようになりました。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 呼び出すたびに数える">
+
+`kaisuu`という変数を`0`で用意し、`ikkaiSukuu`という関数を呼び出すたびに`1`ずつ増やしてください。3回呼び出したあと、`○回すくいました`と表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-06-ex3"
+  initialCode={`// ここに書いてみましょう
+let kaisuu = 0;
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+関数の中で`kaisuu = kaisuu + 1;`と書けば、外の`kaisuu`を更新できます。`let`はつけません。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+let kaisuu = 0;
+
+function ikkaiSukuu() {
+  kaisuu = kaisuu + 1;
+}
+
+ikkaiSukuu();
+ikkaiSukuu();
+ikkaiSukuu();
+console.log(...);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+let kaisuu = 0;
+
+function ikkaiSukuu() {
+  kaisuu = kaisuu + 1;
+}
+
+ikkaiSukuu();
+ikkaiSukuu();
+ikkaiSukuu();
+console.log(`${kaisuu}回すくいました`);
+```
+
+```console
+3回すくいました
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `{ }`の中で`let`・`const`で宣言した変数は、その`{ }`の外からは見えない（ブロックスコープ）。これはif・for・関数のどの`{ }`でも同じ
+- 外ですでに宣言済みの変数に`{ }`の中から代入するだけなら、`{ }`を出たあとも変更は残る
+- 関数の中で外と同じ名前を`let`・`const`で改めて宣言すると、それは別の新しい変数になり、外の変数を覆い隠す（シャドーイング）
+- 外の変数を更新したいときは、`let`・`const`をつけずに`名前 = 値;`とだけ書く
+
+<Quiz
+  client:visible
+  storageKey="nagare-06"
+  questions={[
+    {
+      q: 'if (true) { const x = 1; } の後で console.log(x); を実行すると？',
+      choices: ['1が表示される', 'ReferenceErrorになる', 'undefinedが表示される'],
+      answer: 1,
+      explain: 'xはif の{ }の中だけで存在するブロックスコープの変数なので、外からは見えずReferenceErrorになります。',
+    },
+    {
+      q: '関数の中で、外と同じ名前をletで改めて宣言するとどうなる？',
+      choices: ['外の変数がそのまま更新される', '別の新しい変数が作られ、外の変数を覆い隠す（シャドーイング）', 'SyntaxErrorになる'],
+      answer: 1,
+      explain: 'letで再宣言すると、それは外の変数とは別の新しい変数になります。これがシャドーイングです。',
+    },
+    {
+      q: '関数の中から外の変数を更新したいとき、正しい書き方は？',
+      choices: ['let 名前 = 値;', 'const 名前 = 値;', '名前 = 値;（letもconstもつけない）'],
+      answer: 2,
+      explain: 'letやconstをつけると新しい変数の宣言になってしまいます。外の変数を更新するには、宣言なしで代入だけを書きます。',
+    },
+  ]}
+/>

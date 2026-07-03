@@ -1,0 +1,190 @@
+/* ============================================================
+   実行ブロック（CodeRunner / HtmlRunner 共通）
+   ============================================================ */
+
+.runner {
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--c-editor-bg);
+  box-shadow: var(--shadow-card);
+  margin-block: var(--space-4);
+  overflow: hidden;
+}
+
+.runner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-paper-2);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.runner-lang {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-kon);
+}
+
+.runner-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.runner-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background: var(--c-aka);
+  color: var(--c-on-aka);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 0.5em 1.2em;
+  min-height: 40px;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.runner-run:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.runner-run:active {
+  transform: translateY(1px);
+}
+
+.runner-run:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.runner-reset {
+  background: none;
+  border: none;
+  color: var(--c-ink-3);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.5em 0.8em;
+  border-radius: var(--radius-sm);
+}
+
+.runner-reset:hover {
+  color: var(--c-ink);
+  background: var(--c-paper-3);
+}
+
+.runner-editor {
+  min-height: 3em;
+}
+
+.runner-skeleton {
+  margin: 0;
+  padding: 12px 12px 12px 36px;
+  font-family: var(--font-code);
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--c-ink-2);
+  white-space: pre-wrap;
+}
+
+.runner-output {
+  border-top: 1px solid var(--c-line);
+  background: var(--c-output-bg);
+  color: var(--c-output-text);
+  font-family: var(--font-code);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  padding: var(--space-3);
+  max-height: 16em;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.runner-error {
+  border-top: 2px solid var(--c-aka);
+  background: var(--c-aka-soft);
+  padding: var(--space-3);
+}
+
+.runner-error-message {
+  margin: 0;
+  color: var(--c-ink);
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.runner-error-message::before {
+  content: '— ';
+  color: var(--c-aka);
+}
+
+.runner-error-reading {
+  margin: var(--space-2) 0 0;
+  color: var(--c-ink);
+  line-height: 1.7;
+}
+
+.console-warn {
+  color: #d9a521;
+}
+
+.console-error {
+  color: #e08767;
+}
+
+.runner-error-hint {
+  margin: var(--space-2) 0 0;
+  color: var(--c-ink-2);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.runner-error-hint::before {
+  content: '🏮 ';
+}
+
+.runner-kbd-hint {
+  margin: 0;
+  padding: var(--space-1) var(--space-3) var(--space-2);
+  font-size: 0.75rem;
+  color: var(--c-ink-3);
+  text-align: right;
+}
+
+.runner-kbd-hint kbd {
+  border: 1px solid var(--c-line-strong);
+  border-radius: 3px;
+  padding: 0 0.35em;
+  font-size: 0.9em;
+  background: var(--c-paper-2);
+}
+
+@media (max-width: 640px) {
+  .runner-kbd-hint {
+    display: none; /* モバイルにキーボードヒントは不要 */
+  }
+}
+
+/* ============================================================
+   HtmlRunner専用（iframeプレビュー）
+   ============================================================ */
+
+.runner-preview-wrap {
+  border-top: 1px solid var(--c-line);
+  background: #fff; /* HTML文書自体の既定背景に近い、テーマに依存しない白 */
+}
+
+.runner-preview {
+  width: 100%;
+  display: block;
+  border: none;
+}

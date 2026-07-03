@@ -1,0 +1,108 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../utils/url';
+
+const yatai = (await getCollection('yatai')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout
+  title="屋台のこぼれ話"
+  description="JavaScript縁日のコラム集「屋台のこぼれ話」。10日間で作られた言語、Javaとは名前だけの他人、0.1 + 0.2の夜店の手品——本文の外にある、ちょっとした寄り道です。"
+>
+  <main class="container">
+    <header class="yatai-index-header">
+      <p class="leaf-rule">屋台のこぼれ話</p>
+      <h1>屋台で、ちょっとひと休みどうぞ。</h1>
+      <p class="yatai-index-lead">
+        JavaScriptという言語の歴史や、ちょっとした逸話をまとめたコラム集です。レッスンの合間の、寄り道にどうぞ。
+      </p>
+    </header>
+
+    <ol class="yatai-menu">
+      {
+        yatai.length === 0 ? (
+          <li class="yatai-menu-empty">まだ屋台は仕込み中です。もうしばらくお待ちください。</li>
+        ) : (
+          yatai.map((m) => (
+            <li>
+              <a class="yatai-menu-item" href={withBase(`/yatai/${m.id}/`)}>
+                <span class="yatai-menu-mark" aria-hidden="true">
+                  🏮
+                </span>
+                <span class="yatai-menu-main">
+                  <span class="yatai-menu-title">{m.data.title}</span>
+                  <span class="yatai-menu-desc">{m.data.description}</span>
+                </span>
+              </a>
+            </li>
+          ))
+        )
+      }
+    </ol>
+  </main>
+</BaseLayout>
+
+<style>
+  .yatai-index-header {
+    padding-block: var(--space-6) var(--space-5);
+    max-width: var(--measure);
+  }
+
+  .yatai-index-lead {
+    color: var(--c-ink-2);
+    margin-top: var(--space-3);
+    line-height: 1.95;
+  }
+
+  .yatai-menu {
+    list-style: none;
+    margin: 0 0 var(--space-7);
+    padding: 0;
+    max-width: 42rem;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .yatai-menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    border-bottom: 1px dashed var(--c-line-strong);
+    padding: var(--space-3) var(--space-2);
+    text-decoration: none;
+    color: var(--c-ink);
+    transition: background-color var(--dur-fast) ease;
+  }
+
+  .yatai-menu-item:hover {
+    background: var(--c-paper-2);
+  }
+
+  .yatai-menu-mark {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    flex-shrink: 0;
+  }
+
+  .yatai-menu-main {
+    display: grid;
+    gap: 0.25em;
+  }
+
+  .yatai-menu-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  .yatai-menu-desc {
+    font-size: 0.88rem;
+    color: var(--c-ink-3);
+    line-height: 1.8;
+  }
+
+  .yatai-menu-empty {
+    color: var(--c-ink-3);
+    padding: var(--space-4) var(--space-2);
+  }
+</style>

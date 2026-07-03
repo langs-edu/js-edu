@@ -1,0 +1,416 @@
+---
+title: 練習——数当てゲーム
+course: nagare
+order: 7
+description: Math.random()で乱数を作り、整数に変換する定石を覚えます。関数・while・if/else ifをすべて組み合わせて、実行のたびに答えが変わる数当てゲームを組み立てる、このコースの総仕上げです。
+seed: 数当てゲーム、お疲れさまでした。ここまでは、ひとつひとつの値を名前で扱ってきました。次のコースでは、たくさんの値をまとめて持つ方法——配列——を学びます。
+minutes: 25
+---
+
+import CodeRunner from '../../../components/islands/CodeRunner';
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## 総仕上げに、乱数を使ったゲームを作る
+
+if、while、for、関数、スコープ——プログラムの流れを作る道具が、一通りそろいました。このレッスンでは、それを全部使って、実行するたびに答えが変わる**数当てゲーム**を組み立てます。まずは、答えをランダムに決める方法から見ていきましょう。
+
+## Math.random()——0以上1未満の乱数
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-a"
+  initialCode={`console.log(Math.random());
+console.log(Math.random());
+console.log(Math.random());`}
+/>
+
+以下は実行結果の一例です。実行するたびに違う数字になります。
+
+```console
+0.5655206758906348
+0.40312590449271
+0.7031047661010044
+```
+
+`Math.random()`は、`0`以上`1`未満の小数をランダムに返します。`0`になる可能性はありますが、`1`になることはありません。呼び出すたびに違う値が返るので、何度実行しても同じ結果にはなりません。
+
+## 整数の乱数を作る定石
+
+ゲームで使いたいのは、`0.56...`のような小数ではなく、`1`から`6`のような整数です。`Math.random()`を整数に変換する、決まった書き方があります。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-b"
+  initialCode={`function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+console.log(randomInt(1, 6));
+console.log(randomInt(1, 6));
+console.log(randomInt(1, 6));`}
+/>
+
+以下は実行結果の一例です（サイコロなので、実行するたびに1〜6のどれかになります）。
+
+```console
+6
+5
+6
+```
+
+`Math.random() * (maxInclusive - minInclusive + 1)`で範囲を広げ、`Math.floor()`（コース1の06で登場した、小数点以下を切り捨てる関数）で整数にし、最後に`minInclusive`を足して範囲をずらす——この3段階が定石です。`randomInt(1, 6)`なら`1`から`6`までの整数が、`randomInt(1, 100)`なら`1`から`100`までの整数が、それぞれ同じ確率で返ってきます。
+
+## 関数・while・if/else ifを組み合わせる
+
+道具がそろったので、いよいよ本体を組み立てます。コンピューターが`1`から`100`までの数を1つ選び、二分探索——「真ん中を予想して、大きいか小さいかで範囲を半分に絞る」——というやり方で、自動的に数を当てていくプログラムです。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-c"
+  initialCode={`function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+function kazuAtege() {
+  const kotae = randomInt(1, 100);
+  let low = 1;
+  let high = 100;
+  let kaisuu = 0;
+
+  while (low <= high) {
+    const yosou = Math.floor((low + high) / 2);
+    kaisuu = kaisuu + 1;
+    console.log(\`\${kaisuu}回目の予想: \${yosou}\`);
+
+    if (yosou === kotae) {
+      console.log(\`正解です！ \${kaisuu}回で当てました\`);
+      return;
+    } else if (yosou < kotae) {
+      console.log("もっと大きい数です");
+      low = yosou + 1;
+    } else {
+      console.log("もっと小さい数です");
+      high = yosou - 1;
+    }
+  }
+}
+
+kazuAtege();`}
+/>
+
+以下は実行結果の一例です。`kotae`が乱数で決まるので、実行するたびに違う予想の道すじになります。
+
+```console
+1回目の予想: 50
+もっと小さい数です
+2回目の予想: 25
+もっと小さい数です
+3回目の予想: 12
+もっと大きい数です
+4回目の予想: 18
+もっと小さい数です
+5回目の予想: 15
+もっと大きい数です
+6回目の予想: 16
+もっと大きい数です
+7回目の予想: 17
+正解です！ 7回で当てました
+```
+
+何度も実行して、`kotae`が変わるたびに予想の回数や道すじが変わることを確かめてください。仕組みを整理します。
+
+- `low`と`high`が、今「答えがありうる範囲」を表す
+- `while (low <= high)`——範囲が残っている間だけくりかえす
+- 範囲の真ん中`yosou`を予想し、`kotae`と`===`で比較する
+- 大きければ`low`を、小さければ`high`を詰めて、範囲を半分に絞る
+- 当たったら`return`でその場で関数を終える
+
+`1`から`100`まで、範囲を半分ずつに絞っていくので、当たるまでの回数はだいたい`7`回以内におさまります。
+
+<Callout type="mame" title="なぜこのゲームは無限ループにならないの？">
+`while (low <= high)`だけを見ると、コース2の03で見た無限ループが心配になるかもしれません。でもこのゲームでは、`if`か`else if`のどちらかが実行されるたびに、`low`が増えるか`high`が減るかのどちらかが必ず起きます。範囲は毎回確実に狭くなり、いつか`low > high`になって`while`は終わります。「くりかえすたびに、終わりに向かって何かが確実に進んでいるか」——これが無限ループを防ぐ考え方です。
+</Callout>
+
+<Exercise title="演習1: サイコロを振る関数">
+
+`randomInt`を使って`saikoroFuru`という関数を作ってください。`1`から`6`までの整数を1つ返し、呼び出し元でその値を使って`○の目が出ました`と表示してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-ex1"
+  initialCode={`function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`randomInt(1, 6)`の結果を、そのまま`return`する関数を作ります。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function saikoroFuru() {
+  return randomInt(1, 6);
+}
+
+console.log(`${saikoroFuru()}の目が出ました`);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex1.js"
+function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+function saikoroFuru() {
+  return randomInt(1, 6);
+}
+
+console.log(`${saikoroFuru()}の目が出ました`);
+```
+
+以下は実行結果の一例です。
+
+```console
+1の目が出ました
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: くじ引き">
+
+`randomInt(1, 3)`を使って`kujibiki`という関数を作ってください。`1`なら`大当たり`、`2`なら`当たり`、`3`なら`はずれ`を`return`してください。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-ex2"
+  initialCode={`function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+// ここに書いてみましょう
+`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+`randomInt(1, 3)`の結果を変数に受け取り、`if`・`else if`・`else`で3通りに分岐して、それぞれ違う文字列を`return`します。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function kujibiki() {
+  const bangou = randomInt(1, 3);
+
+  if (bangou === 1) {
+    return "大当たり";
+  } else if (bangou === 2) {
+    return "...";
+  } else {
+    return "...";
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex2.js"
+function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+function kujibiki() {
+  const bangou = randomInt(1, 3);
+
+  if (bangou === 1) {
+    return "大当たり";
+  } else if (bangou === 2) {
+    return "当たり";
+  } else {
+    return "はずれ";
+  }
+}
+
+console.log(kujibiki());
+```
+
+以下は実行結果の一例です。
+
+```console
+当たり
+```
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: 数当てゲームの範囲を変える">
+
+本文の`kazuAtege`関数を書き換えて、`minInclusive`と`maxInclusive`という2つの引数を受け取れるようにしてください。`kazuAtege(1, 20)`のように呼び出せば、`1`から`20`の範囲で数当てが遊べるようにします。
+
+<CodeRunner
+  client:visible
+  storageKey="nagare-07-ex3"
+  initialCode={`function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+// kazuAtegeを引数つきに書き換えてみましょう
+function kazuAtege() {
+  const kotae = randomInt(1, 100);
+  let low = 1;
+  let high = 100;
+  let kaisuu = 0;
+
+  while (low <= high) {
+    const yosou = Math.floor((low + high) / 2);
+    kaisuu = kaisuu + 1;
+    console.log(\`\${kaisuu}回目の予想: \${yosou}\`);
+
+    if (yosou === kotae) {
+      console.log(\`正解です！ \${kaisuu}回で当てました\`);
+      return;
+    } else if (yosou < kotae) {
+      console.log("もっと大きい数です");
+      low = yosou + 1;
+    } else {
+      console.log("もっと小さい数です");
+      high = yosou - 1;
+    }
+  }
+}
+
+kazuAtege();`}
+/>
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+関数の引数に`minInclusive`と`maxInclusive`を追加し、`randomInt(1, 100)`や`low = 1`、`high = 100`のように直接書いていた`1`と`100`を、それぞれ引数に置き換えます。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+```js nocheck
+function kazuAtege(minInclusive, maxInclusive) {
+  const kotae = randomInt(minInclusive, maxInclusive);
+  let low = minInclusive;
+  let high = maxInclusive;
+  // ...
+}
+
+kazuAtege(1, 20);
+```
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+```js title="ex3.js"
+function randomInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+function kazuAtege(minInclusive, maxInclusive) {
+  const kotae = randomInt(minInclusive, maxInclusive);
+  let low = minInclusive;
+  let high = maxInclusive;
+  let kaisuu = 0;
+
+  while (low <= high) {
+    const yosou = Math.floor((low + high) / 2);
+    kaisuu = kaisuu + 1;
+    console.log(`${kaisuu}回目の予想: ${yosou}`);
+
+    if (yosou === kotae) {
+      console.log(`正解です！ ${kaisuu}回で当てました`);
+      return;
+    } else if (yosou < kotae) {
+      console.log("もっと大きい数です");
+      low = yosou + 1;
+    } else {
+      console.log("もっと小さい数です");
+      high = yosou - 1;
+    }
+  }
+}
+
+kazuAtege(1, 20);
+```
+
+以下は実行結果の一例です。範囲が狭くなった分、当たるまでの回数も短くなります。
+
+```console
+1回目の予想: 10
+もっと小さい数です
+2回目の予想: 5
+もっと小さい数です
+3回目の予想: 2
+もっと大きい数です
+4回目の予想: 3
+もっと大きい数です
+5回目の予想: 4
+正解です！ 5回で当てました
+```
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- `Math.random()`は`0`以上`1`未満の小数をランダムに返す
+- `Math.floor(Math.random() * (max - min + 1)) + min`が、`min`から`max`までの整数の乱数を作る定石
+- 乱数を使ったコードは実行のたびに結果が変わる。それでも「終わりに向かって範囲が確実に狭まっている」ことを確認しておけば、無限ループの心配なく`while`を使える
+- if・while・for・関数・スコープ——このコースで学んだ道具は、組み合わせることで1つのプログラムになる
+
+<Quiz
+  client:visible
+  storageKey="nagare-07"
+  questions={[
+    {
+      q: 'Math.random() が返す値の範囲として正しいのは？',
+      choices: ['0以上1未満', '1以上100以下', '-1以上1以下'],
+      answer: 0,
+      explain: 'Math.random()は0以上1未満の小数を返します。1になることはありません。',
+    },
+    {
+      q: '1から6までの整数の乱数を作る定石として正しいのはどれ？',
+      choices: ['Math.random() * 6', 'Math.floor(Math.random() * 6) + 1', 'Math.floor(Math.random()) + 6'],
+      answer: 1,
+      explain: 'Math.random()で範囲を広げてからMath.floor()で切り捨て、最後に開始値を足すのが定石です。',
+    },
+    {
+      q: '数当てゲームのwhile (low <= high) が無限ループにならない理由は？',
+      choices: ['Math.random()を使っているから', 'if/else ifのどちらかで必ずlowかhighが更新され、範囲が確実に狭まるから', 'while文には自動的にタイムアウトがあるから'],
+      answer: 1,
+      explain: '予想のたびに範囲が半分に絞られていくので、いつか必ずlow > highになりループが終わります。',
+    },
+  ]}
+/>

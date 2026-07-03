@@ -1,0 +1,212 @@
+---
+title: Node.jsと、ファイルで実行
+course: hajimete
+order: 8
+description: ブラウザの外でJavaScriptを動かすNode.jsをインストールし、hello.jsをファイルに書いてnodeコマンドで実行します。ブラウザとの共通点・違う点も、名前だけ確認しておきます。
+seed: "道具がそろいました。次のコースでは、プログラムに「判断」を教えます"
+minutes: 20
+---
+
+import Callout from '../../../components/ui/Callout.astro';
+import Exercise from '../../../components/ui/Exercise.astro';
+import Quiz from '../../../components/islands/Quiz';
+
+## ブラウザの外へ
+
+コース1の最初のレッスンで、「JavaScriptはブラウザの中だけの言語ではなくなった」と少しだけ触れました。ここで、その舞台を実際に覗いてみます。**Node.js**は、ブラウザを開かなくても、パソコンやサーバーの上で直接JavaScriptを実行できる仕組みです。Webページの中で動くための言語だったJavaScriptが、Node.jsのおかげで、ファイルの読み書きや、サーバーを立てるようなプログラムにも使われるようになりました。
+
+このレッスンだけは、CodeRunnerの中ではなく、あなたのパソコンで実際に手を動かします。環境が用意できなくても、読むだけで流れはつかめるように書いてあります。
+
+## Node.jsをインストールする
+
+公式サイト（[nodejs.org](https://nodejs.org/)）を開くと、ダウンロードボタンがいくつか並んでいます。中でも**LTS**（Long-Term Support、長期サポート版）と書かれたボタンを選んでください。WindowsでもmacOSでも、ダウンロードしたインストーラを実行し、案内される画面のとおりに進めれば完了します。Linuxの場合は、ディストリビューションのパッケージ管理ツールを使う方法もありますが、迷ったら公式サイトの案内に従うのが確実です。
+
+<Callout type="note" title="バージョンについて">
+このサイトのコードはNode.js 22で動作確認していますが、それより新しいLTS版（インストール時にもっと大きな番号が案内されることもあります）でも、このサイトのコードは問題なく動きます。迷ったら、公式サイトで**LTS**と書かれているほうを選んでください。
+</Callout>
+
+## インストールできたか確かめる
+
+ターミナル（WindowsはコマンドプロンプトやPowerShell）を開いて、次のコマンドを実行してください。
+
+```console
+node --version
+```
+
+インストールできていれば、`v22.14.0`のような形式で、バージョン番号が表示されます。数字の部分は、あなたがインストールした時期によって変わります。先頭が`v`で始まる番号らしきものが表示されていれば成功です。もし`command not found`のようなメッセージが出た場合は、インストールがうまくいっていないか、一度ターミナルを閉じて開き直す必要があるかもしれません。
+
+## hello.jsを書いて、実行する
+
+コードをファイルに保存してみましょう。エディタで新しいファイルを作り、`hello.js`という名前で、次の1行を保存してください。
+
+```js title="hello.js"
+console.log("いらっしゃい、縁日へ");
+```
+
+保存したら、ファイルを保存したフォルダでターミナルを開き、次のコマンドを実行してください。
+
+```console
+$ node hello.js
+いらっしゃい、縁日へ
+```
+
+`node ファイル名`という形で、そのファイルに書かれたJavaScriptが実行されます。ここまでのレッスンでCodeRunnerに書いてきたコードと、書き方はまったく同じです。実行する場所が、ブラウザの中からターミナルに変わっただけです。
+
+## ブラウザと共通の部分、違う部分
+
+JavaScriptという言語そのもの、`console.log`のような基本的な仕組みは、ブラウザでもNode.jsでも変わりません。ここまでの7つのレッスンで学んだことは、すべてそのままNode.jsでも通用します。
+
+一方で、違う部分もあります。ブラウザだけが持っている`document`のような仕組みは、Node.jsには存在しません。試しに、次のコードをファイルに保存して実行してみてください。
+
+```js expect-error title="mado.js"
+console.log(document);
+```
+
+実行すると、次のようなエラーになります（実際の画面には、この上下にファイルの場所や詳しい呼び出し履歴も表示されますが、ここでは要点だけを示しています。上の行は、あなたが保存した場所によって変わります）。
+
+```console
+$ node mado.js
+ReferenceError: document is not defined
+```
+
+`document`は、Webページというものが存在するブラウザの中でだけ意味を持つ仕組みです。ページを表示していないNode.jsには存在しません。逆に、Node.jsには`fs`（ファイルを読み書きする道具）や`require`（他のファイルのコードを読み込む仕組み）のような、ブラウザには無い道具が用意されています。これらの中身は、この先のコース6でモジュールを学ぶときにあらためて扱います。今は名前だけ知っておいてください。
+
+<Callout type="warn" title="つまずきポイント：ReferenceErrorは、前回学んだのと同じ顔">
+`document is not defined`というメッセージは、レッスン7で見た`mikan is not defined`とまったく同じ形をしています。「存在しない名前を使おうとした」という意味では、原因はまったく同じです。`document`という名前が「存在しない」のは、間違えたからではなく、**今いる場所（Node.js）にはその仕組みがそもそも用意されていないから**です。同じReferenceErrorでも、原因はタイプミスとは限らない、ということも知っておいてください。
+</Callout>
+
+## これからの進め方
+
+このレッスンより先のコースでは、基本的にこのサイトのCodeRunner（ブラウザの中の遊び場）を使って進めていきます。ファイルに保存してターミナルから`node`コマンドで実行する、という今回の流れは、コース6でもう一度、本格的に使う場面が来ます。今のうちに一度体験しておいたことは、決して無駄にはなりません。
+
+<Exercise title="演習1: 自分のパソコンでhello.jsを実行する">
+
+環境が用意できる人は、実際に`hello.js`というファイルを作り、好きなメッセージを`console.log`で出力するコードを保存して、`node hello.js`で実行してください。
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`hello.js`の例と、まったく同じ手順です。ファイルの中身だけ、あなたの好きなメッセージに変えてみてください。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+エディタで`console.log("好きなメッセージ");`という1行を書いて`hello.js`として保存し、そのフォルダでターミナルを開いて`node hello.js`と打ちます。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+ターミナルに、あなたが書いたメッセージがそのまま表示されれば成功です。環境が用意できなかった場合も、CodeRunnerで同じコードを試せば、同じ結果を確認できます。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習2: 複数行のスクリプトを作る">
+
+`console.log`を2回使って、2行のメッセージを出力する`aisatsu.js`というファイルを作り、実行してください。
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+レッスン1・2の演習でCodeRunnerに書いたコードと、中身はまったく同じです。今回はそれをファイルに保存して実行する、という違いだけです。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log("1行目");`と`console.log("2行目");`を上下に並べてファイルに保存します。
+
+</details>
+
+<details>
+<summary>こたえ（の一例）</summary>
+
+```js title="aisatsu.js"
+console.log("いらっしゃい");
+console.log("縁日へようこそ");
+```
+
+```console
+$ node aisatsu.js
+いらっしゃい
+縁日へようこそ
+```
+
+2行とも表示されれば成功です。
+
+</details>
+
+</Exercise>
+
+<Exercise title="演習3: documentがないことを、自分でも確かめる">
+
+`console.log(document);`という1行だけのファイルを作って実行し、このレッスンで見たものと同じエラーになることを確認してください。
+
+<details>
+<summary>ヒント1（考え方）</summary>
+
+このレッスンの`mado.js`の例をそのまま試すだけです。
+
+</details>
+
+<details>
+<summary>ヒント2（かたち）</summary>
+
+`console.log(document);`という1行を保存して`node ファイル名`で実行します。
+
+</details>
+
+<details>
+<summary>こたえ</summary>
+
+`ReferenceError: document is not defined`というメッセージが表示されれば成功です。ブラウザのCodeRunnerで同じコードを試すとどうなるか、余裕があれば見比べてみるのもおもしろいはずです（ただし、このサイトのCodeRunnerでは、この先のコースまでdocumentは使わない約束になっています）。
+
+</details>
+
+</Exercise>
+
+## このレッスンで分かったこと
+
+- **Node.js**は、ブラウザの外でJavaScriptを実行できる仕組み。公式サイトからLTS版をインストールする
+- `node ファイル名`で、ファイルに保存したJavaScriptを実行できる
+- 言語そのものや`console.log`はブラウザと共通。`document`のようなブラウザ専用の仕組みはNode.jsには無く、代わりに`fs`や`require`のような道具がある
+- 以後のコースは、基本的にこのサイトのCodeRunnerで進める
+
+<Quiz
+  client:visible
+  storageKey="hajimete-08"
+  questions={[
+    {
+      q: 'Node.jsとは何か、もっとも近い説明はどれ？',
+      choices: [
+        'ブラウザの新しい種類の1つ',
+        'ブラウザの外でJavaScriptを実行できる仕組み',
+        'JavaScriptとは別のプログラミング言語',
+      ],
+      answer: 1,
+      explain: 'Node.jsは、ブラウザを開かなくてもパソコンやサーバーの上でJavaScriptを実行できる仕組みです。',
+    },
+    {
+      q: '`hello.js`というファイルに保存したコードを実行するコマンドはどれ？',
+      choices: ['run hello.js', 'node hello.js', 'javac hello.js'],
+      answer: 1,
+      explain: '`node ファイル名`という形で、保存したJavaScriptファイルを実行します。',
+    },
+    {
+      q: 'Node.jsで`console.log(document);`を実行するとどうなる？',
+      choices: [
+        '空のページの情報が表示される',
+        'ReferenceError: document is not defined というエラーになる',
+        '自動的にブラウザが開いて表示される',
+      ],
+      answer: 1,
+      explain: 'documentはブラウザの中だけで意味を持つ仕組みで、Node.jsには存在しないためReferenceErrorになります。',
+    },
+  ]}
+/>
